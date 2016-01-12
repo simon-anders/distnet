@@ -89,12 +89,15 @@ function update() {
    selection = d3.select("#mypanel").selectAll("line")
       .data( shortdistslist )
    selection.enter().append("line")
-      .attr( "style", "stroke: rgb(255,0,0); stroke-width: 1" )
    selection
       .attr( "x1", function(d) { return pointspos[d.p1].x } )
       .attr( "y1", function(d) { return pointspos[d.p1].y } )
       .attr( "x2", function(d) { return pointspos[d.p2].x } )
       .attr( "y2", function(d) { return pointspos[d.p2].y } )
+      .attr( "style", function(d) { 
+         alpha = sigmoid( d.dist, .1, -20 )
+         return "stroke: rgb(255,0,0); stroke-width: 1.5; stroke-opacity: " + alpha } )
+
 
 
 }
