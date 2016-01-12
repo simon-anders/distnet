@@ -6,10 +6,22 @@
 <style>
 
 #scatterpanel circle {
-   fill: darkgray;
+   fill: DarkGray;
    stroke: black;
    fill-opacity: .9;
 }
+
+#scatterpanel line {
+   stroke: DarkBlue; 
+   stroke-width: 1.5; 
+}
+
+#scatterpanel .selected_circle {
+   stroke: DarkRed;
+   stroke-width: 2;
+}
+
+
 </style>
 
 <svg id="scatterpanel" class="chart" width="600" height="600">
@@ -17,8 +29,8 @@
 
 
 <table width="600px">
-<tr><td><svg id="color_bar" width="600px" height="30px"></svg></td></tr>
-<tr><td style="padding-bottom:20px"><div id="slider_threshold" style="width:600px"></div></td></tr>
+<tr><td><svg id="color_bar" width="600px" height="25px"></svg></td></tr>
+<tr><td style="padding-bottom:30px"><div id="slider_threshold" style="width:600px"></div></td></tr>
 <tr><td style="padding-bottom:20px"><div id="slider_slope" style="width:600px"></div></td></tr>
 </table>
 
@@ -41,7 +53,8 @@ function loadTextFileAjaxSync( filePath )
 
 <script>
 
-const alpha_threshold = .05
+// The minum alpha value, for which a line is still drawn
+const alpha_threshold = .02
 
 var inputdata = JSON.parse( loadTextFileAjaxSync( "points.json" ) )
 
@@ -64,8 +77,7 @@ var slider_threshold = d3.slider()
 d3.select('#slider_threshold').call( slider_threshold )
 
 var slider_slope = d3.slider()
-      .axis( true )
-      .max( 200 )
+      .max( 50 )
       .value( 20 )
       .on( "slide", update )
 d3.select('#slider_slope').call( slider_slope )      
@@ -75,8 +87,6 @@ var distslist = []
 for( i = 0; i < inputdata.dm.length; i++ )
    for( j = i+1; j < inputdata.dm.length; j++ )
       distslist.push( { p1: i, p2: j, dist: inputdata.dm[i][j] })
-
-console.log( pointspos )
 
 // color scale:
 var color_bar_scale = d3.scale.linear()
@@ -89,6 +99,19 @@ for( v = color_bar_scale.domain()[0]; v < color_bar_scale.domain()[1]; v += dist
   distvalgrid.push( v )
 }
 
+// Add an invisible dummy line to 'scatterpanel', only to have something to read
+// the style-defined stroke color from later, for use in the color var
+var dummy_line = d3.select("#scatterpanel").append("line")
+   .attr( "id", "dummy_line" )
+   .attr( "style", "stroke-opacity:0")
+
+var drag = d3.behavior.drag()
+   .on( "drag", function( d, i ) {
+       d.x += d3.event.dx
+       d.y += d3.event.dy
+       update() })
+
+
 function update() {
 
    // lines:
@@ -99,27 +122,20 @@ function update() {
       function(a) { return mysigmoid( a.dist ) > alpha_threshold } )
 
    var selection = d3.select("#scatterpanel").selectAll("line")
-      .data( shortdistslist )
-   selection.enter().append("line")
-   selection.exit().remove()
+      .data( distslist )
+   selection.enter().insert("line")
    selection
       .attr( "x1", function(d) { return pointspos[d.p1].x } )
       .attr( "y1", function(d) { return pointspos[d.p1].y } )
       .attr( "x2", function(d) { return pointspos[d.p2].x } )
       .attr( "y2", function(d) { return pointspos[d.p2].y } )
-      .attr( "style", function(d) { 
-         alpha = mysigmoid( d.dist )
-         return "stroke: rgb(255,0,0); stroke-width: 1.5; stroke-opacity: " + alpha } )
+      .style( "display", function(d) { return mysigmoid( d.dist ) > alpha_threshold ? null : "none" } )
+      .style( "stroke-opacity", function(d) { return mysigmoid( d.dist ) } )
+      .classed( "selected_line", function(d,i) { return d.p1==1 | d.p2==1 } )
+
 
    // points:
 
-   var drag = d3.behavior.drag()
-       .on( "drag", function( d, i ) {
-            d.x += d3.event.dx
-            d.y += d3.event.dy
-            update()
-        })
-  
    selection = d3.select("#scatterpanel").selectAll("circle")
       .data( pointspos )
    selection.enter().append("circle")
@@ -128,32 +144,24 @@ function update() {
    selection
       .attr( "cx", function(d) { return d.x } )
       .attr( "cy", function(d) { return d.y } )
+      .classed( "selected_circle", function(d,i) { return i==1 } )
 
+   // color bar:
+
+   var color_bar_height = d3.select("#color_bar").attr("height")
+   var line_color = window.getComputedStyle( dummy_line.node() )["stroke"]
    selection = d3.select("#color_bar").selectAll("rect")
       .data( distvalgrid.filter( function(x) { return mysigmoid(x) > alpha_threshold } ) )
    selection.enter().append("rect")
       .attr( "y", "0" )
       .attr( "width", color_bar_scale( distvalgridstep ) )
-      .attr( "height", "20" )
-   selection.exit().remove() 
+      .attr( "height", color_bar_height )
+      .style( "fill", line_color )
+   selection.exit()
+      .style( { "fill-opacity": "0" } )
    selection
       .attr( "x", function(d) { return color_bar_scale( d ) } )
-      .attr( "style", function(d) { 
-         return "fill: rgb(255,0,0); fill-opacity: " +  mysigmoid( d ) } )
-
-
-
-
-   // var axis = d3.svg.axis()
-   //    .scale( scale )
-   //    //.orient( "bottom" )
-
-   // color_bar.append("g")
-   //    .attr( "transform", "translate( 0, 30 )" )
-   //    .attr( "class", "d3-slider-axis" )
-   //    .call( axis )
-
-
+      .style( "fill-opacity", function(d) { return mysigmoid( d ) } )
 }
 
 update()
