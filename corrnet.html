@@ -46,6 +46,11 @@ blowup = function( x ) { return Math.min( Math.max( 300 * ( x + 1 ), 0 ), 600 ) 
 var pointspos = inputdata.conf.map( 
    function( a ) { return { x: blowup(a[0]), y: blowup(a[1]) } } )
 
+var distslist = []
+for( i = 0; i < inputdata.dm.length; i++ )
+   for( j = i+1; j < inputdata.dm.length; j++ )
+      distslist.push( { p1: i, p2: j, dist: inputdata.dm[i][j] })
+
 console.log( pointspos )
 
 update = function() {
@@ -59,11 +64,9 @@ update = function() {
   
    var selection = d3.select("#mypanel").selectAll("circle")
       .data( pointspos )
-
    selection.enter().append("circle")
       .attr( "r", 9 )
       .call( drag )
-
    selection
       .attr( "cx", function(d) { return d.x } )
       .attr( "cy", function(d) { return d.y } )
@@ -71,11 +74,23 @@ update = function() {
 
    selection = d3.select("#mylist").selectAll("li")
       .data( pointspos )
-   
    selection.enter().append("li")
-
    selection
       .text( function(d) { return d.x + " / " + d.y } )
+
+
+   var shortdistslist = distslist.filter( function(a) { return a.dist < .2 } )
+
+   selection = d3.select("#mypanel").selectAll("line")
+      .data( shortdistslist )
+   selection.enter().append("line")
+      .attr( "style", "stroke: rgb(255,0,0); stroke-width: 1" )
+   selection
+      .attr( "x1", function(d) { return pointspos[d.p1].x } )
+      .attr( "y1", function(d) { return pointspos[d.p1].y } )
+      .attr( "x2", function(d) { return pointspos[d.p2].x } )
+      .attr( "y2", function(d) { return pointspos[d.p2].y } )
+
 
 }
 
