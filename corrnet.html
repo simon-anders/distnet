@@ -16,11 +16,15 @@
    stroke-width: 1.5; 
 }
 
-#scatterpanel .selected_circle {
+#scatterpanel circle.selected {
    stroke: DarkRed;
    stroke-width: 2;
 }
 
+#scatterpanel line.selected {
+   stroke: DarkRed;
+   stroke-width: 3;
+}
 
 </style>
 
@@ -60,8 +64,9 @@ var inputdata = JSON.parse( loadTextFileAjaxSync( "points.json" ) )
 
 function blowup( x ) { return Math.min( Math.max( 300 * ( x + 1 ), 0 ), 600 ) }
 
-var pointspos = inputdata.conf.map( 
-   function( a ) { return { x: blowup(a[0]), y: blowup(a[1]) } } )
+var pointsdata = []
+for( i = 0; i < inputdata.conf.length; i++ ) 
+   pointsdata.push( { x: blowup( inputdata.conf[i][0] ), y: blowup( inputdata.conf[i][1] ), id: inputdata.ids[i] } )
 
 function sigmoid( x, threshold, slope ) {
    var midpoint = threshold + Math.log( 1/alpha_threshold - 1 ) / slope
@@ -99,11 +104,6 @@ for( v = color_bar_scale.domain()[0]; v < color_bar_scale.domain()[1]; v += dist
   distvalgrid.push( v )
 }
 
-// Add an invisible dummy line to 'scatterpanel', only to have something to read
-// the style-defined stroke color from later, for use in the color var
-var dummy_line = d3.select("#scatterpanel").append("line")
-   .attr( "id", "dummy_line" )
-   .attr( "style", "stroke-opacity:0")
 
 var drag = d3.behavior.drag()
    .on( "drag", function( d, i ) {
@@ -111,8 +111,12 @@ var drag = d3.behavior.drag()
        d.y += d3.event.dy
        update() })
 
+// The currently selected (highlighted) point
+var selected_point = -1
 
 function update() {
+
+  console.log( selected_point )
 
    // lines:
 
@@ -125,31 +129,35 @@ function update() {
       .data( distslist )
    selection.enter().insert("line")
    selection
-      .attr( "x1", function(d) { return pointspos[d.p1].x } )
-      .attr( "y1", function(d) { return pointspos[d.p1].y } )
-      .attr( "x2", function(d) { return pointspos[d.p2].x } )
-      .attr( "y2", function(d) { return pointspos[d.p2].y } )
+      .attr( "x1", function(d) { return pointsdata[d.p1].x } )
+      .attr( "y1", function(d) { return pointsdata[d.p1].y } )
+      .attr( "x2", function(d) { return pointsdata[d.p2].x } )
+      .attr( "y2", function(d) { return pointsdata[d.p2].y } )
       .style( "display", function(d) { return mysigmoid( d.dist ) > alpha_threshold ? null : "none" } )
       .style( "stroke-opacity", function(d) { return mysigmoid( d.dist ) } )
-      .classed( "selected_line", function(d,i) { return d.p1==1 | d.p2==1 } )
-
+      .classed( "selected", function(d,i) { return d.p1 == selected_point | d.p2 == selected_point } )
 
    // points:
 
    selection = d3.select("#scatterpanel").selectAll("circle")
-      .data( pointspos )
+      .data( pointsdata )
    selection.enter().append("circle")
       .attr( "r", 9 )
       .call( drag )
+      .on( "dblclick", function(d,i) {
+          selected_point = i
+          update()
+      })
    selection
       .attr( "cx", function(d) { return d.x } )
       .attr( "cy", function(d) { return d.y } )
-      .classed( "selected_circle", function(d,i) { return i==1 } )
+      .classed( "selected", function(d,i) { return i == selected_point } )
 
    // color bar:
 
    var color_bar_height = d3.select("#color_bar").attr("height")
-   var line_color = window.getComputedStyle( dummy_line.node() )["stroke"]
+   var line_color = window.getComputedStyle( 
+       d3.select("#scatterpanel").selectAll("line:not(.selected)").node() )["stroke"]
    selection = d3.select("#color_bar").selectAll("rect")
       .data( distvalgrid.filter( function(x) { return mysigmoid(x) > alpha_threshold } ) )
    selection.enter().append("rect")
