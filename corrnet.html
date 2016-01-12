@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 
-<title>distmat display</title>
+<title>Distance matrix graph display</title>
 
 <style>
 
@@ -23,20 +23,30 @@
 
 #scatterpanel line.selected {
    stroke: DarkRed;
-   stroke-width: 3;
 }
 
 </style>
 
-<svg id="scatterpanel" class="chart" width="600" height="600">
+
+
 </svg>
 
-
-<table width="600px">
-<tr><td><svg id="color_bar" width="600px" height="25px"></svg></td></tr>
-<tr><td style="padding-bottom:30px"><div id="slider_threshold" style="width:600px"></div></td></tr>
-<tr><td style="padding-bottom:20px"><div id="slider_slope" style="width:600px"></div></td></tr>
+<table style="padding-top:30px">
+   <tr>
+      <td><svg id="scatterpanel" class="chart" width="600" height="600"></svg></td>
+      <td valign="top" align="left" style="padding-left:20px" width="200"><p id="point_text"></p></td>
+    </tr><tr>
+       <td><svg id="color_bar" width="600px" height="25px"></svg></td>
+       <td></td>
+    </tr><tr>
+       <td style="padding-bottom:30px"><div id="slider_threshold" style="width:600px"></div></td>
+       <td></td>
+    </tr><tr>
+       <td style="padding-bottom:20px"><div id="slider_slope" style="width:600px"></div></td>
+       <td></td>
+    </tr>
 </table>
+
 
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
@@ -45,6 +55,7 @@
 
 <script>
 // taken from http://stackoverflow.com/questions/4116992/how-to-include-json-data-in-javascript-synchronously-without-parsing
+// only used here to load local data for testing
 function loadTextFileAjaxSync( filePath )
 {
   var xmlhttp = new XMLHttpRequest()
@@ -57,8 +68,7 @@ function loadTextFileAjaxSync( filePath )
 
 <script>
 
-// The minum alpha value, for which a line is still drawn
-const alpha_threshold = .02
+// Prepare input data:
 
 var inputdata = JSON.parse( loadTextFileAjaxSync( "points.json" ) )
 
@@ -66,13 +76,46 @@ function blowup( x ) { return Math.min( Math.max( 300 * ( x + 1 ), 0 ), 600 ) }
 
 var pointsdata = []
 for( i = 0; i < inputdata.conf.length; i++ ) 
-   pointsdata.push( { x: blowup( inputdata.conf[i][0] ), y: blowup( inputdata.conf[i][1] ), id: inputdata.ids[i] } )
+   pointsdata.push( { 
+      x: blowup( inputdata.conf[i][0] ), 
+      y: blowup( inputdata.conf[i][1] ), 
+      id: inputdata.ids[i],
+      text: "Drug " + inputdata.ids[i] } )
+
+var distslist = []
+for( i = 0; i < inputdata.dm.length; i++ )
+   for( j = i+1; j < inputdata.dm.length; j++ )
+      distslist.push( { p1: i, p2: j, dist: inputdata.dm[i][j] })
+
+</script>
+
+<!--
+Now we have two arrays:
+  - pointsdata, with one element per data point, and for each data point the slots:
+    - x and y (position on the panel, in pixels)
+    - id: the ID to be used for the point's tool tip
+    - text: the text to display in the 'point_text' element when the point is selected
+  - distslist, with one element per line, and for each element the slots:
+    - p1 and p2: The indexes of the two points in pointsdata that the line connects
+    - dist: The feature-space distance of the two points
+
+With this, we can go into the main script, which follows.
+-->
+
+<script>
+
+// The sigmoid function:
+
+// The minum alpha value, for which a line is still drawn
+const alpha_threshold = .02
 
 function sigmoid( x, threshold, slope ) {
    var midpoint = threshold + Math.log( 1/alpha_threshold - 1 ) / slope
    return 1 / ( 1 + Math.exp( -slope * ( x - midpoint ) ) )
 }
 
+
+// The two sliders:
 
 var slider_threshold = d3.slider()
       .axis( true )
@@ -88,15 +131,14 @@ var slider_slope = d3.slider()
 d3.select('#slider_slope').call( slider_slope )      
 
 
-var distslist = []
-for( i = 0; i < inputdata.dm.length; i++ )
-   for( j = i+1; j < inputdata.dm.length; j++ )
-      distslist.push( { p1: i, p2: j, dist: inputdata.dm[i][j] })
+// The scale object for the color bar:
 
-// color scale:
 var color_bar_scale = d3.scale.linear()
    .domain( [ slider_threshold.min(), slider_threshold.max() ] )
    .range( [ 0, 600 ])
+
+
+// The data array for the color bar:
 
 var distvalgrid = []
 var distvalgridstep = ( color_bar_scale.domain()[1] - color_bar_scale.domain()[0] ) / 100 
@@ -105,18 +147,24 @@ for( v = color_bar_scale.domain()[0]; v < color_bar_scale.domain()[1]; v += dist
 }
 
 
+// A drag behavior for the points, to be added below  to each point:
+
 var drag = d3.behavior.drag()
    .on( "drag", function( d, i ) {
        d.x += d3.event.dx
        d.y += d3.event.dy
        update() })
 
+
 // The currently selected (highlighted) point
+
 var selected_point = -1
+
+
+// The update function
 
 function update() {
 
-  console.log( selected_point )
 
    // lines:
 
@@ -137,6 +185,7 @@ function update() {
       .style( "stroke-opacity", function(d) { return mysigmoid( d.dist ) } )
       .classed( "selected", function(d,i) { return d.p1 == selected_point | d.p2 == selected_point } )
 
+
    // points:
 
    selection = d3.select("#scatterpanel").selectAll("circle")
@@ -152,6 +201,9 @@ function update() {
       .attr( "cx", function(d) { return d.x } )
       .attr( "cy", function(d) { return d.y } )
       .classed( "selected", function(d,i) { return i == selected_point } )
+      .append("svg:title")
+         .text( function(d) { return d.id } )
+
 
    // color bar:
 
@@ -170,7 +222,18 @@ function update() {
    selection
       .attr( "x", function(d) { return color_bar_scale( d ) } )
       .style( "fill-opacity", function(d) { return mysigmoid( d ) } )
+
+   
+   // Point info text
+
+   if( selected_point > 0 ) 
+       d3.select("#point_text").text( pointsdata[selected_point].text )
+   else
+       d3.select("#point_text").text( null )
 }
+
+
+// Initial call to the update function:
 
 update()
 
