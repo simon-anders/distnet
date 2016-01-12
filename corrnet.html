@@ -5,19 +5,21 @@
 
 <style>
 
-#mypanel circle {
-   fill: orange;
+#scatterpanel circle {
+   fill: darkgray;
+   stroke: black;
    fill-opacity: .9;
 }
 </style>
 
-<svg id="mypanel" class="chart" width="600" height="600">
+<svg id="scatterpanel" class="chart" width="600" height="600">
 </svg>
 
 
-<table width="600px" style="border-spacing:25px">
-<tr><td><div id="slider_midpoint" style="width:550px"></div></td></tr>
-<tr><td><div id="slider_slope" style="width:550px"></div></td></tr>
+<table width="600px">
+<tr><td><svg id="color_bar" width="600px" height="50px"></svg></td></tr>
+<tr><td style="padding-bottom:20px"><div id="slider_midpoint" style="width:600px"></div></td></tr>
+<tr><td style="padding-bottom:20px"><div id="slider_slope" style="width:600px"></div></td></tr>
 </table>
 
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
@@ -73,6 +75,17 @@ for( i = 0; i < inputdata.dm.length; i++ )
 
 console.log( pointspos )
 
+// color scale:
+var color_bar_scale = d3.scale.linear()
+   .domain( [ slider_midpoint.min(), slider_midpoint.max() ] )
+   .range( [ 0, 600 ])
+
+var distvalgrid = []
+var distvalgridstep = ( color_bar_scale.domain()[1] - color_bar_scale.domain()[0] ) / 100 
+for( v = color_bar_scale.domain()[0]; v < color_bar_scale.domain()[1]; v += distvalgridstep ) {
+  distvalgrid.push( v )
+}
+
 function update() {
 
    // lines:
@@ -82,7 +95,7 @@ function update() {
    var shortdistslist = distslist.filter( 
       function(a) { return mysigmoid( a.dist ) > .2 } )
 
-   var selection = d3.select("#mypanel").selectAll("line")
+   var selection = d3.select("#scatterpanel").selectAll("line")
       .data( shortdistslist )
    selection.enter().append("line")
    selection.exit().remove()
@@ -104,7 +117,7 @@ function update() {
             update()
         })
   
-   selection = d3.select("#mypanel").selectAll("circle")
+   selection = d3.select("#scatterpanel").selectAll("circle")
       .data( pointspos )
    selection.enter().append("circle")
       .attr( "r", 9 )
@@ -112,6 +125,30 @@ function update() {
    selection
       .attr( "cx", function(d) { return d.x } )
       .attr( "cy", function(d) { return d.y } )
+
+   selection = d3.select("#color_bar").selectAll("rect")
+      .data( distvalgrid )
+   selection.enter().append("rect")
+      .attr( "y", "0" )
+      .attr( "width", color_bar_scale( distvalgridstep ) )
+      .attr( "height", "20" )
+   selection
+      .attr( "x", function(d) { return color_bar_scale( d ) } )
+      .attr( "style", function(d) { 
+         return "fill: rgb(255,0,0); fill-opacity: " +  mysigmoid( d ) } )
+
+
+
+
+   // var axis = d3.svg.axis()
+   //    .scale( scale )
+   //    //.orient( "bottom" )
+
+   // color_bar.append("g")
+   //    .attr( "transform", "translate( 0, 30 )" )
+   //    .attr( "class", "d3-slider-axis" )
+   //    .call( axis )
+
 
 }
 
