@@ -1,31 +1,28 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
 
-<title>movable points</title>
+<title>distmat display</title>
 
 <style>
 
-.mylistclass li {
-  color: blue;
-}
-
 #mypanel circle {
    fill: orange;
+   fill-opacity: .9;
 }
 </style>
 
 <svg id="mypanel" class="chart" width="600" height="600">
 </svg>
 
-<div id="slider1" style="width:600px"></div>
 
-<ul id="mylist" class="mylistclass">
-</ul>
-
+<table width="600px" style="border-spacing:25px">
+<tr><td><div id="slider_midpoint" style="width:550px"></div></td></tr>
+<tr><td><div id="slider_slope" style="width:550px"></div></td></tr>
+</table>
 
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
-<link rel="stylesheet" href="https://rawgit.com/MasterMaps/d3-slider/master/d3.slider.css" />
+<link rel="stylesheet" href="https://rawgit.com/MasterMaps/d3-slider/master/d3.slider.css"></link>
 <script src="https://rawgit.com/MasterMaps/d3-slider/master/d3.slider.js"></script>
 
 <script>
@@ -42,8 +39,6 @@ function loadTextFileAjaxSync( filePath )
 
 <script>
 
-d3.select('#slider1').call(d3.slider())
-
 var inputdata = JSON.parse( loadTextFileAjaxSync( "points.json" ) )
 
 function blowup( x ) { return Math.min( Math.max( 300 * ( x + 1 ), 0 ), 600 ) }
@@ -56,6 +51,21 @@ function sigmoid( x, midpoint, slope ) {
 }
 
 
+var slider_midpoint = d3.slider()
+      .axis( true )
+      .max( 2 )
+      .value( .1 )
+      .on( "slide", update )
+d3.select('#slider_midpoint').call( slider_midpoint )
+
+var slider_slope = d3.slider()
+      .axis( true )
+      .max( 200 )
+      .value( 20 )
+      .on( "slide", update )
+d3.select('#slider_slope').call( slider_slope )      
+
+
 var distslist = []
 for( i = 0; i < inputdata.dm.length; i++ )
    for( j = i+1; j < inputdata.dm.length; j++ )
@@ -65,6 +75,28 @@ console.log( pointspos )
 
 function update() {
 
+   // lines:
+
+   mysigmoid = function( x ) { return sigmoid( x, slider_midpoint.value(), -slider_slope.value() ) } 
+
+   var shortdistslist = distslist.filter( 
+      function(a) { return mysigmoid( a.dist ) > .2 } )
+
+   var selection = d3.select("#mypanel").selectAll("line")
+      .data( shortdistslist )
+   selection.enter().append("line")
+   selection.exit().remove()
+   selection
+      .attr( "x1", function(d) { return pointspos[d.p1].x } )
+      .attr( "y1", function(d) { return pointspos[d.p1].y } )
+      .attr( "x2", function(d) { return pointspos[d.p2].x } )
+      .attr( "y2", function(d) { return pointspos[d.p2].y } )
+      .attr( "style", function(d) { 
+         alpha = mysigmoid( d.dist )
+         return "stroke: rgb(255,0,0); stroke-width: 1.5; stroke-opacity: " + alpha } )
+
+   // points:
+
    var drag = d3.behavior.drag()
        .on( "drag", function( d, i ) {
             d.x += d3.event.dx
@@ -72,7 +104,7 @@ function update() {
             update()
         })
   
-   var selection = d3.select("#mypanel").selectAll("circle")
+   selection = d3.select("#mypanel").selectAll("circle")
       .data( pointspos )
    selection.enter().append("circle")
       .attr( "r", 9 )
@@ -80,30 +112,6 @@ function update() {
    selection
       .attr( "cx", function(d) { return d.x } )
       .attr( "cy", function(d) { return d.y } )
-
-
-   selection = d3.select("#mylist").selectAll("li")
-      .data( pointspos )
-   selection.enter().append("li")
-   selection
-      .text( function(d) { return d.x + " / " + d.y } )
-
-
-   var shortdistslist = distslist.filter( function(a) { return a.dist < .2 } )
-
-   selection = d3.select("#mypanel").selectAll("line")
-      .data( shortdistslist )
-   selection.enter().append("line")
-   selection
-      .attr( "x1", function(d) { return pointspos[d.p1].x } )
-      .attr( "y1", function(d) { return pointspos[d.p1].y } )
-      .attr( "x2", function(d) { return pointspos[d.p2].x } )
-      .attr( "y2", function(d) { return pointspos[d.p2].y } )
-      .attr( "style", function(d) { 
-         alpha = sigmoid( d.dist, .1, -20 )
-         return "stroke: rgb(255,0,0); stroke-width: 1.5; stroke-opacity: " + alpha } )
-
-
 
 }
 
