@@ -41,10 +41,15 @@ var inputdata = JSON.parse( loadTextFileAjaxSync( "points.json" ) )
 
 console.log( inputdata.conf )
 
-blowup = function( x ) { return Math.min( Math.max( 300 * ( x + 1 ), 0 ), 600 ) }
+function blowup( x ) { return Math.min( Math.max( 300 * ( x + 1 ), 0 ), 600 ) }
 
 var pointspos = inputdata.conf.map( 
    function( a ) { return { x: blowup(a[0]), y: blowup(a[1]) } } )
+
+function sigmoid( x, midpoint, slope ) {
+   return 1 / ( 1 + Math.exp( -slope * ( x - midpoint ) ) )
+}
+
 
 var distslist = []
 for( i = 0; i < inputdata.dm.length; i++ )
@@ -53,7 +58,7 @@ for( i = 0; i < inputdata.dm.length; i++ )
 
 console.log( pointspos )
 
-update = function() {
+function update() {
 
    var drag = d3.behavior.drag()
        .on( "drag", function( d, i ) {
