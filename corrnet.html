@@ -9,7 +9,7 @@
   color: blue;
 }
 
-.chart circle {
+#mypanel circle {
    fill: orange;
 }
 </style>
@@ -17,11 +17,16 @@
 <svg id="mypanel" class="chart" width="600" height="600">
 </svg>
 
+<div id="slider1" style="width:600px"></div>
+
 <ul id="mylist" class="mylistclass">
 </ul>
 
 
 <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+<link rel="stylesheet" href="https://rawgit.com/MasterMaps/d3-slider/master/d3.slider.css" />
+<script src="https://rawgit.com/MasterMaps/d3-slider/master/d3.slider.js"></script>
 
 <script>
 // taken from http://stackoverflow.com/questions/4116992/how-to-include-json-data-in-javascript-synchronously-without-parsing
@@ -37,9 +42,9 @@ function loadTextFileAjaxSync( filePath )
 
 <script>
 
-var inputdata = JSON.parse( loadTextFileAjaxSync( "points.json" ) )
+d3.select('#slider1').call(d3.slider())
 
-console.log( inputdata.conf )
+var inputdata = JSON.parse( loadTextFileAjaxSync( "points.json" ) )
 
 function blowup( x ) { return Math.min( Math.max( 300 * ( x + 1 ), 0 ), 600 ) }
 
