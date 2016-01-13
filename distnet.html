@@ -72,7 +72,7 @@ function loadTextFileAjaxSync( filePath )
 
 var inputdata = JSON.parse( loadTextFileAjaxSync( "points.json" ) )
 
-function blowup( x ) { return Math.min( Math.max( 300 * ( x + 1 ), 0 ), 600 ) }
+function blowup( x ) { return Math.min( Math.max( 50 * ( x + 1 ), 0 ), 600 ) }
 
 var pointsdata = []
 for( i = 0; i < inputdata.conf.length; i++ ) 
@@ -104,16 +104,41 @@ With this, we can go into the main script, which follows.
 
 <script>
 
-// The sigmoid function:
 
 // The minum alpha value, for which a line is still drawn
 const alpha_threshold = .02
 
+// The sigmoid function:
 function sigmoid( x, threshold, slope ) {
    var midpoint = threshold + Math.log( 1/alpha_threshold - 1 ) / slope
    return 1 / ( 1 + Math.exp( -slope * ( x - midpoint ) ) )
 }
 
+// A function to get x and y scale which preserve aspect ratio
+function fixed_scales_pair( width, height, xvals, yvals ) {
+   var xmin = d3.min( xvals )
+   var xmax = d3.max( xvals )
+   var ymin = d3.min( yvals )
+   var ymax = d3.max( yvals )
+   var factor = Math.min( width / (xmax-xmin), height / (ymax-ymin) )
+   return ({
+      x: d3.scale.linear()
+         .range( [ 0, width ] )
+         .domain( [ xmin, xmax ] ),
+         //.domain( [ (xmin+xmax)/2 - (xmax-xmin)/2*factor, (xmin+xmax)/2 + (xmax-xmin)/2*factor ] ),
+      y: d3.scale.linear()
+         .range( [ 0, height ] )
+         .domain( [ymin, ymax ] ) })
+         //.domain( [ (ymin+ymax)/2 - (ymax-ymin)/2*factor, (ymin+ymax)/2 + (ymax-ymin)/2*factor ] ) })
+}
+
+// Use the function
+var scales = fixed_scales_pair( 
+   600, 600,
+   pointsdata.map( function(a) { return a.x } ),
+   pointsdata.map( function(a) { return a.y } ) )
+scales.x.clamp( true )
+scales.y.clamp( true )
 
 // The two sliders:
 
@@ -151,8 +176,8 @@ for( v = color_bar_scale.domain()[0]; v < color_bar_scale.domain()[1]; v += dist
 
 var drag = d3.behavior.drag()
    .on( "drag", function( d, i ) {
-       d.x += d3.event.dx
-       d.y += d3.event.dy
+       d.x = scales.x.invert( scales.x(d.x) + d3.event.dx )
+       d.y = scales.y.invert( scales.y(d.y) + d3.event.dy )
        update() })
 
 
@@ -177,10 +202,10 @@ function update() {
       .data( distslist )
    selection.enter().insert("line")
    selection
-      .attr( "x1", function(d) { return pointsdata[d.p1].x } )
-      .attr( "y1", function(d) { return pointsdata[d.p1].y } )
-      .attr( "x2", function(d) { return pointsdata[d.p2].x } )
-      .attr( "y2", function(d) { return pointsdata[d.p2].y } )
+      .attr( "x1", function(d) { return scales.x( pointsdata[d.p1].x ) } )
+      .attr( "y1", function(d) { return scales.y( pointsdata[d.p1].y ) } )
+      .attr( "x2", function(d) { return scales.x( pointsdata[d.p2].x ) } )
+      .attr( "y2", function(d) { return scales.y( pointsdata[d.p2].y ) } )
       .style( "display", function(d) { return mysigmoid( d.dist ) > alpha_threshold ? null : "none" } )
       .style( "stroke-opacity", function(d) { return mysigmoid( d.dist ) } )
       .classed( "selected", function(d,i) { return d.p1 == selected_point | d.p2 == selected_point } )
@@ -198,8 +223,8 @@ function update() {
           update()
       })
    selection
-      .attr( "cx", function(d) { return d.x } )
-      .attr( "cy", function(d) { return d.y } )
+      .attr( "cx", function(d) { return scales.x( d.x ) } )
+      .attr( "cy", function(d) { return scales.y( d.y ) } )
       .classed( "selected", function(d,i) { return i == selected_point } )
       .append("svg:title")
          .text( function(d) { return d.id } )
