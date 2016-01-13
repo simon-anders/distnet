@@ -114,29 +114,41 @@ function sigmoid( x, threshold, slope ) {
    return 1 / ( 1 + Math.exp( -slope * ( x - midpoint ) ) )
 }
 
-// A function to get x and y scale which preserve aspect ratio
-function fixed_scales_pair( width, height, xvals, yvals ) {
-   var xmin = d3.min( xvals )
-   var xmax = d3.max( xvals )
-   var ymin = d3.min( yvals )
-   var ymax = d3.max( yvals )
-   var factor = Math.min( width / (xmax-xmin), height / (ymax-ymin) )
-   return ({
-      x: d3.scale.linear()
-         .range( [ 0, width ] )
-         .domain( [ xmin, xmax ] ),
-         //.domain( [ (xmin+xmax)/2 - (xmax-xmin)/2*factor, (xmin+xmax)/2 + (xmax-xmin)/2*factor ] ),
-      y: d3.scale.linear()
-         .range( [ 0, height ] )
-         .domain( [ymin, ymax ] ) })
-         //.domain( [ (ymin+ymax)/2 - (ymax-ymin)/2*factor, (ymin+ymax)/2 + (ymax-ymin)/2*factor ] ) })
+// This function takes an object 'scales' with linear scales in slots 'x' and 'y',
+// and changes them to get the desired x:y aspect ratio 'asp'.
+function fix_aspect_ratio( scales, asp ) {
+   var xfactor = ( scales.x.range()[1] - scales.x.range()[0] ) / 
+      ( scales.x.domain()[1] - scales.x.domain()[0] )
+   var yfactor = ( scales.y.range()[1] - scales.y.range()[0] ) / 
+      ( scales.y.domain()[1] - scales.y.domain()[0] )
+   var curasp = xfactor / yfactor  // current aspect ratio
+   if( curasp > asp ) {  // x domain has to be expanded
+      var cur_dom_length = ( scales.x.domain()[1] - scales.x.domain()[0] )
+      var extension = cur_dom_length * ( curasp/asp - 1 ) / 2
+      console.log( "extend x by", extension )
+      scales.x.domain( [ scales.x.domain()[0] - extension, scales.x.domain()[1] + extension ] )      
+   } else { // y domain has to be expanded
+      var cur_dom_length = ( scales.y.domain()[1] - scales.y.domain()[0] )
+      var extension = cur_dom_length * ( asp/curasp - 1 ) / 2
+      console.log( "extend y by", extension )
+      scales.y.domain( [ scales.y.domain()[0] - extension, scales.y.domain()[1] + extension ] )            
+   }
+   return( scales )
 }
 
-// Use the function
-var scales = fixed_scales_pair( 
-   600, 600,
-   pointsdata.map( function(a) { return a.x } ),
-   pointsdata.map( function(a) { return a.y } ) )
+function minmax( x ) {
+   return [ d3.min(x), d3.max(x) ]
+}
+
+// Set the scales
+var scales = {
+   x: d3.scale.linear()
+      .domain( minmax( pointsdata.map( function(a) { return a.x } ) ) )
+      .range( [ 0, 600 ] ),
+   y: d3.scale.linear()
+      .domain( minmax( pointsdata.map( function(a) { return a.y } ) ) )
+      .range( [ 0, 600 ] ) }
+fix_aspect_ratio( scales, 1 )      
 scales.x.clamp( true )
 scales.y.clamp( true )
 
