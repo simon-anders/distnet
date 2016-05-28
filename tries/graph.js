@@ -97,7 +97,7 @@ function minmax( x ) {
 }
 
 
-function distnet( svgElement, nodePos, distMatrix ) {
+function distnet( svgElement, nodePos, distMatrix, colorScale ) {
 
   var edgeList = []
   for( var i = 0; i < nodePos.length; i++ ) {
@@ -108,9 +108,81 @@ function distnet( svgElement, nodePos, distMatrix ) {
 
   var that = simpleGraph( svgElement, nodePos, edgeList )
 
+  that.dressEdges = function( edgesSelection ) {
+     edgesSelection
+       .style( "display", function(d) { return d.dist < .3 ? null : "none" } )
+       .style( "stroke", function(d) { return colorScale( d.dist ) } )
+  }
+
   return that;
 
 } 
+
+function sigmoidColorSlider( divElement, maxVal ) {
+
+  var that = {}
+
+  var table = divElement.append("table")
+    .style( "width", "100%" )
+    .style( "table-layout", "fixed" );
+  var td1 = table.append("tr").append("td");
+  var td2 = table.append("tr").append("td");
+  var td3 = table.append("tr").append("td");
+  
+  var colorBarContainer = td1.append( "svg" )
+    .attr( "width", "100%")
+    .style( "height", "30px" );
+  var theColorBar = colorBar( colorBarContainer );
+
+  var threshSlider = d3.slider()
+    .axis( true )
+    .max( maxVal )
+    .value( maxVal / 4 );
+  td2.call( threshSlider )
+
+  var slopeSlider = d3.slider()
+    .max( threshSlider.max() * 150 )   // <- FIX this factor
+    .value( threshSlider.max() * 50 );
+  td3.call( slopeSlider )      
+
+  that.update = function( ) {
+    
+    //var that = this;
+
+    var mysigmoid = function( x ) { return sigmoid( x, threshSlider.value(), -slopeSlider.value(), .05 ) }; 
+    
+    var linColorScale = d3.scale.linear()
+      .domain( [ 1, 0 ] )
+      .range( [ "blue", "white" ]);
+
+    that.colorScale = function(x) { return linColorScale( mysigmoid( x ) ) }
+
+    theColorBar.scale = function(x) { return that.colorScale( x * threshSlider.max() ) };
+
+    theColorBar.update();
+
+    console.log(that.net);
+    if( that.net ) {
+      that.net.update();   // <- TESTING ONLY
+    }
+
+  }
+
+  threshSlider.on( "slide", that.update );
+  slopeSlider.on( "slide", that.update );
+
+  that.update();
+
+  return that;
+
+}
+
+
+// The sigmoid function:
+function sigmoid( x, threshold, slope, threshVal ) {
+   var midpoint = threshold + Math.log( 1/threshVal - 1 ) / slope
+   return 1 / ( 1 + Math.exp( -slope * ( x - midpoint ) ) )
+}
 
 
 // Test
@@ -134,13 +206,15 @@ g.dressNodes = function( nodesSelection ) {
 g.update();
 */
 
-var g = distnet( d3.select("#mySvg"), 
+var slider = sigmoidColorSlider( d3.select("#sliderDiv"), d3.max( d3.max( inputdata.distmat ) ) );
+
+var theNet = distnet( d3.select("#mySvg"), 
   inputdata.points2D.map( function(a) { return { x: a[0], y: a[1] } } ), 
-  inputdata.distmat );
+  inputdata.distmat,
+  slider.colorScale );
 
-g.dressEdges = function( edgesSelection ) {
-  edgesSelection
-    .style( "display", function(d) { return d.dist < .3 ? null : "none" } )
-}
+console.log("A",slider.net);
+slider.net = theNet;  // testing only
+console.log("A",slider.net);
 
-g.update()
+theNet.update()
