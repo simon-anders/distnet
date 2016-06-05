@@ -2,40 +2,40 @@
 
 function simpleGraph( svgElement, nodePos, edgeList ) {
 
-  var that = {}
+  var obj = {}
 
   // append to svgElement
-  that.groupNode = svgElement.append( "g" )
+  obj.groupNode = svgElement.append( "g" )
     .classed( "graph", true )
     .style( "stroke", "black");
 
   // scales
   (function(){
     var mm = minmax( nodePos.map( function(a) { return a.x } ) );
-    that.scaleX = d3.scale.linear()
+    obj.scaleX = d3.scale.linear()
       .domain( [ mm[0] - 0.05 * (mm[1]-mm[0]), mm[1] + 0.05 * (mm[1]-mm[0]) ] )
       .range( [ 0, parseFloat( svgElement.attr("width") ) ] );
     mm = minmax( nodePos.map( function(a) { return a.y } ) );
-    that.scaleY = d3.scale.linear()
+    obj.scaleY = d3.scale.linear()
       .domain( [ mm[0] - 0.05 * (mm[1]-mm[0]), mm[1] + 0.05 * (mm[1]-mm[0]) ] )
       .range( [ 0, parseFloat( svgElement.attr("height") ) ] );
-    fix_aspect_ratio( that.scaleX, that.scaleY, 1 );      
-    that.scaleX.clamp( true );
-    that.scaleY.clamp( true );
+    fix_aspect_ratio( obj.scaleX, obj.scaleY, 1 );      
+    obj.scaleX.clamp( true );
+    obj.scaleY.clamp( true );
   })();
 
   // construct drag behavior, added in 'update'
   var drag = d3.behavior.drag()
     .on( "drag", function( d, i ) {
-       d.x = that.scaleX.invert( that.scaleX(d.x) + d3.event.dx )
-       d.y = that.scaleY.invert( that.scaleY(d.y) + d3.event.dy )
-       that.update() 
+       d.x = obj.scaleX.invert( obj.scaleX(d.x) + d3.event.dx )
+       d.y = obj.scaleY.invert( obj.scaleY(d.y) + d3.event.dy )
+       obj.update() 
      } )
 
   
-  that.update = function( ) {
+  obj.update = function( ) {
 
-    var that = this
+    var obj = this
 
     // edges
     var sel = this.groupNode.selectAll("line")
@@ -43,10 +43,10 @@ function simpleGraph( svgElement, nodePos, edgeList ) {
     sel.enter().append("line")
     sel.exit().remove()
     sel
-      .attr( "x1", function(d) { return that.scaleX( nodePos[d.p1].x ) } )
-      .attr( "y1", function(d) { return that.scaleY( nodePos[d.p1].y ) } )
-      .attr( "x2", function(d) { return that.scaleX( nodePos[d.p2].x ) } )
-      .attr( "y2", function(d) { return that.scaleY( nodePos[d.p2].y ) } )
+      .attr( "x1", function(d) { return obj.scaleX( nodePos[d.p1].x ) } )
+      .attr( "y1", function(d) { return obj.scaleY( nodePos[d.p1].y ) } )
+      .attr( "x2", function(d) { return obj.scaleX( nodePos[d.p2].x ) } )
+      .attr( "y2", function(d) { return obj.scaleY( nodePos[d.p2].y ) } )
       .call( this.dressEdges )
 
     // points
@@ -57,19 +57,19 @@ function simpleGraph( svgElement, nodePos, edgeList ) {
       .call( drag );
     sel.exit().remove()
     sel
-      .attr( "cx", function(d) { return that.scaleX( d.x ) } )
-      .attr( "cy", function(d) { return that.scaleY( d.y ) } )
+      .attr( "cx", function(d) { return obj.scaleX( d.x ) } )
+      .attr( "cy", function(d) { return obj.scaleY( d.y ) } )
       .call( this.dressNodes )
 
   }
   
-  that.dressEdges = function( edgesSelection ) {
+  obj.dressEdges = function( edgesSelection ) {
   }
 
-  that.dressNodes = function( nodesSelection ) {
+  obj.dressNodes = function( nodesSelection ) {
   }
 
-  return that  
+  return obj  
 }
 
 // This function takes two linear scales, and extends the domain of one of them to get 
@@ -106,21 +106,25 @@ function distnet( svgElement, nodePos, distMatrix, colorScale ) {
     }
   }
 
-  var that = simpleGraph( svgElement, nodePos, edgeList )
+  var obj = simpleGraph( svgElement, nodePos, edgeList )
 
-  that.dressEdges = function( edgesSelection ) {
+  obj.dressEdges = function( edgesSelection ) {
      edgesSelection
        .style( "display", function(d) { return d.dist < .3 ? null : "none" } )
        .style( "stroke", function(d) { return colorScale( d.dist ) } )
   }
 
-  return that;
+  return obj;
 
 } 
 
-function sigmoidColorSlider( divElement, maxVal ) {
+function sigmoidColorSlider( divElement, maxVal, minColor, maxColor ) {
 
-  var that = {}
+  var obj = {}
+
+  obj.maxVal = maxVal===undefined ? 1 : maxVal;
+  obj.minColor = minColor===undefined ? "blue" : maxVal;
+  obj.maxColor = maxColor===undefined ? "white" : maxVal;
 
   var table = divElement.append("table")
     .style( "width", "100%" )
@@ -136,8 +140,8 @@ function sigmoidColorSlider( divElement, maxVal ) {
 
   var threshSlider = d3.slider()
     .axis( true )
-    .max( maxVal )
-    .value( maxVal / 4 );
+    .max( obj.maxVal )
+    .value( obj.maxVal / 4 );
   td2.call( threshSlider )
 
   var slopeSlider = d3.slider()
@@ -145,35 +149,41 @@ function sigmoidColorSlider( divElement, maxVal ) {
     .value( threshSlider.max() * 50 );
   td3.call( slopeSlider )      
 
-  that.update = function( ) {
+  obj.update = function( ) {
     
-    //var that = this;
-
-    var mysigmoid = function( x ) { return sigmoid( x, threshSlider.value(), -slopeSlider.value(), .05 ) }; 
+    obj.scale = function( x ) { return sigmoid( x, threshSlider.value(), -slopeSlider.value(), .05 ) }; 
     
     var linColorScale = d3.scale.linear()
       .domain( [ 1, 0 ] )
-      .range( [ "blue", "white" ]);
+      .range( [ obj.minColor, obj.maxColor ] );
 
-    that.colorScale = function(x) { return linColorScale( mysigmoid( x ) ) }
+    obj.colorScale = function(x) { return linColorScale( obj.scale( x ) ) }
 
-    theColorBar.scale = function(x) { return that.colorScale( x * threshSlider.max() ) };
+    theColorBar.scale = function(x) { return obj.colorScale( x * threshSlider.max() ) };
 
     theColorBar.update();
 
-    console.log(that.net);
-    if( that.net ) {
-      that.net.update();   // <- TESTING ONLY
+    for( var i = 0; i < obj.changeListeners.length; i++ ) {
+      obj.changeListeners[i].fun.call( obj.changeListeners[i].thisArg );
     }
 
   }
 
-  threshSlider.on( "slide", that.update );
-  slopeSlider.on( "slide", that.update );
+  obj.changeListeners = [];
 
-  that.update();
+  obj.onChange = function( fun, thisArg, add ) {
+    if( !add ) {
+      obj.changeListeners = [];
+    } 
+    obj.changeListeners.push( { fun: fun, thisArg: thisArg } );
+  }
 
-  return that;
+  threshSlider.on( "slide", obj.update );
+  slopeSlider.on( "slide", obj.update );
+
+  obj.update();
+
+  return obj;
 
 }
 
@@ -213,8 +223,6 @@ var theNet = distnet( d3.select("#mySvg"),
   inputdata.distmat,
   slider.colorScale );
 
-console.log("A",slider.net);
-slider.net = theNet;  // testing only
-console.log("A",slider.net);
+slider.onChange( theNet.update, theNet );
 
 theNet.update()
