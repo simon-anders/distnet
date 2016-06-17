@@ -35,10 +35,8 @@ function simpleGraph( svgElement, nodePos, edgeList ) {
   
   obj.update = function( ) {
 
-    var obj = this
-
     // edges
-    var sel = this.groupNode.selectAll("line")
+    var sel = obj.groupNode.selectAll("line")
       .data( edgeList );
     sel.enter().append("line")
     sel.exit().remove()
@@ -47,10 +45,10 @@ function simpleGraph( svgElement, nodePos, edgeList ) {
       .attr( "y1", function(d) { return obj.scaleY( nodePos[d.p1].y ) } )
       .attr( "x2", function(d) { return obj.scaleX( nodePos[d.p2].x ) } )
       .attr( "y2", function(d) { return obj.scaleY( nodePos[d.p2].y ) } )
-      .call( this.dressEdges )
+      .call( obj.dressEdges )
 
     // points
-    var sel = this.groupNode.selectAll("circle")
+    var sel = obj.groupNode.selectAll("circle")
       .data( nodePos );
     sel.enter().append("circle")
       .attr( "r", 6 )
@@ -59,7 +57,7 @@ function simpleGraph( svgElement, nodePos, edgeList ) {
     sel
       .attr( "cx", function(d) { return obj.scaleX( d.x ) } )
       .attr( "cy", function(d) { return obj.scaleY( d.y ) } )
-      .call( this.dressNodes )
+      .call( obj.dressNodes )
 
   }
   
@@ -97,7 +95,7 @@ function minmax( x ) {
 }
 
 
-function distnet( svgElement, nodePos, distMatrix, colorScale ) {
+function distnet( svgElement, nodePos, distMatrix, scale ) {
 
   var edgeList = []
   for( var i = 0; i < nodePos.length; i++ ) {
@@ -110,8 +108,9 @@ function distnet( svgElement, nodePos, distMatrix, colorScale ) {
 
   obj.dressEdges = function( edgesSelection ) {
      edgesSelection
-       .style( "display", function(d) { return d.dist < .3 ? null : "none" } )
-       .style( "stroke", function(d) { return colorScale( d.dist ) } )
+       .style( "display", function(d) { return scale( d.dist ) > .05 ? null : "none" } )
+       .style( "stroke", "darkblue" )
+       .style( "stroke-opacity", function(d) { return scale( d.dist ) } );
   }
 
   return obj;
@@ -123,7 +122,7 @@ function sigmoidColorSlider( divElement, maxVal, minColor, maxColor ) {
   var obj = {}
 
   obj.maxVal = maxVal===undefined ? 1 : maxVal;
-  obj.minColor = minColor===undefined ? "blue" : maxVal;
+  obj.minColor = minColor===undefined ? "darkblue" : maxVal;
   obj.maxColor = maxColor===undefined ? "white" : maxVal;
 
   var table = divElement.append("table")
@@ -221,7 +220,7 @@ var slider = sigmoidColorSlider( d3.select("#sliderDiv"), d3.max( d3.max( inputd
 var theNet = distnet( d3.select("#mySvg"), 
   inputdata.points2D.map( function(a) { return { x: a[0], y: a[1] } } ), 
   inputdata.distmat,
-  slider.colorScale );
+  slider.scale );
 
 slider.onChange( theNet.update, theNet );
 
