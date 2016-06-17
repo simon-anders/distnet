@@ -19,7 +19,7 @@ distnet <- function( dists, conf = NULL, labels = NULL ) {
     labels <- rownames( dists )
   stopifnot( length(labels) == nrow(dists) )
 
-  htmlwidgets::createWidget( "distnet", 
+  htmlwidgets::createWidget( "distnetR", 
     list( distmat=dists, pointpos=conf, labels=labels ) )
 
 }

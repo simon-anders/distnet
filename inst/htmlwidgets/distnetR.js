@@ -1,6 +1,6 @@
 HTMLWidgets.widget({
 
-  name: "distnet",
+  name: "distnetR",
   
   type: "output",
   
