@@ -197,23 +197,6 @@ function sigmoid( x, threshold, slope, threshVal ) {
 // Test
 
 /*
-var g = simpleGraph( d3.select("#mySvg"),
-   [ { x:20, y:10 },
-     { x:45, y:25 },
-     { x:30, y:15 },
-     { x: 8, y:55 } ],
-   [ { p1: 0, p2: 1},
-     { p1: 0, p2: 2},
-     { p1: 1, p2: 3} ] );
-
-var oldDresser = g.dressNodes;
-g.dressNodes = function( nodesSelection ) {
-  nodesSelection.style( "fill", function( d, i ) { return i == 1 ? "red" : "black" } )
-  oldDresser();
-}
-
-g.update();
-*/
 
 var slider = sigmoidColorSlider( d3.select("#sliderDiv"), d3.max( d3.max( inputdata.distmat ) ) );
 
@@ -225,3 +208,5 @@ var theNet = distnet( d3.select("#mySvg"),
 slider.onChange( theNet.update, theNet );
 
 theNet.update()
+
+*/

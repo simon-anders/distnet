@@ -3,3 +3,15 @@ dependencies:
     version: 3.5.16
     src: htmlwidgets/lib/d3-3.5.16
     script: d3.min.js
+  - name: d3-slider
+    version: 2015.03.03
+    src: htmlwidgets/lib/d3-slider
+    script: d3.slider.js 
+    stylesheet: d3.slider.css
+  - name: distnet
+    version: 0.0.0
+    src: htmlwidgets/lib/distnet
+    script: 
+      - colorbar.js
+      - simpleGraph.js
+      - distnet.js
