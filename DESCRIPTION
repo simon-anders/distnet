@@ -1,0 +1,9 @@
+Package: distnet
+Version: 0.0.0
+Date: 2016-04-25
+Title: distnet widget
+Author: Simon Anders
+Maintainer: Simon Anders <sanders@fs.tum.de>
+License: tbd
+Description: none yet
+Imports: htmlwidgets (>= 0.6), MASS
