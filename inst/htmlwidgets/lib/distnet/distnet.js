@@ -1,3 +1,5 @@
+"use strict";
+
 function distnet( svgElement, nodePos, distMatrix, scale ) {
 
   var edgeList = []
@@ -47,8 +49,8 @@ function sigmoidColorSlider( divElement, maxVal, minColor, maxColor ) {
   td2.call( threshSlider )
 
   var slopeSlider = d3.slider()
-    .max( threshSlider.max() * 150 )   // <- FIX this factor
-    .value( threshSlider.max() * 50 );
+    .max( 200 / threshSlider.max() )
+    .value( 50 / threshSlider.max() );
   td3.call( slopeSlider )      
 
   obj.update = function( ) {

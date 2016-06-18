@@ -17,7 +17,7 @@ HTMLWidgets.widget({
 
     var svgNode = d3.select(el).select( "svg" )
       .attr( "width", width )
-      .attr( "height", height );
+      .attr( "height", height-50 );   // fixme: properly subtract height of color bar here
 
     var slider;
 
