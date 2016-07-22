@@ -6,8 +6,6 @@ HTMLWidgets.widget({
   
   factory: function( el, width, height ) {
   
-    var widgetElement = el;
-
     d3.select(el).html(
       "<table>" +
       "  <tr><td><svg id=\"distnetSvg\"></svg></td></tr>" +
@@ -15,40 +13,40 @@ HTMLWidgets.widget({
       "</table>"
     )
 
-    var svgNode = d3.select(el).select( "svg" )
-      .attr( "width", width )
-      .attr( "height", height-50 );   // fixme: properly subtract height of color bar here
+    var obj = {};
 
-    var slider;
+    obj.widgetElement = el;
 
-    return {
+    obj.renderValue = function( x ) {
 
-      renderValue: function( x ) {
+      var slider = sigmoidColorSlider( 
+         d3.select(obj.widgetElement).select("#sliderDiv"), 
+         d3.max( d3.max( x.distmat ) ) );
 
-        var slider = sigmoidColorSlider( 
-           d3.select("#sliderDiv"), 
-           d3.max( d3.max( x.distmat ) ) );
+      obj.resize( width, height );
 
-        var theNet = distnet( svgNode, 
-          x.pointpos.map( function(a) { return { x: a[0], y: a[1] } } ), 
-          x.distmat,
-          slider.scale );
+      var theNet = distnet( 
+        d3.select(obj.widgetElement).select("#distnetSvg"), 
+        x.pointpos.map( function(a) { return { x: a[0], y: a[1] } } ), 
+        x.distmat,
+        slider.scale );
 
-        slider.onChange( theNet.update, theNet );
+      slider.onChange( theNet.update, theNet );
 
-        theNet.update()
+      theNet.update()
 
-      },
+    }
 
-      resize: function( width, height ) {
-        svgNode
-          .attr( "width", width )
-          .attr( "height", height )
-        // render update missing?
-      },
+    obj.resize = function( width, height ) {
+      var sliderHeight = d3.select(obj.widgetElement).select("#sliderDiv")
+        .node().getBoundingClientRect().height; 
+      d3.select(obj.widgetElement).select("#distnetSvg")
+        .attr( "width", width )
+        .attr( "height", d3.max([ 100, height - sliderHeight ]) );
+      // render update missing?
+    }
 
-      svgNode: svgNode
-    };
+    return obj;
 
   }
 
