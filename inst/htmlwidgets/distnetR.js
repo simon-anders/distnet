@@ -9,7 +9,7 @@ HTMLWidgets.widget({
     d3.select(el).html(
       "<table>" +
       "  <tr><td><svg id=\"distnetSvg\"></svg></td></tr>" +
-      "  <tr><td><div id=\"labelDiv\"></div></td></tr>" +
+      "  <tr><td><div id=\"labelDiv\">&nbsp;</div></td></tr>" +
       "  <tr><td><div id=\"sliderDiv\"></div></td></tr>" +
       "</table>"
     )
@@ -26,15 +26,26 @@ HTMLWidgets.widget({
 
       obj.resize( width, height );
 
-      var theNet = distnet( 
+      obj.net = distnet( 
         d3.select(obj.widgetElement).select("#distnetSvg"), 
         x.pointpos.map( function(a) { return { x: a[0], y: a[1] } } ), 
         x.distmat,
         obj.slider.scale );
 
-      obj.slider.on( "change.distnetR", theNet.update );
+      obj.slider.on( "change.distnetR", obj.net.update, obj.net );
 
-      theNet.update()
+      obj.net.on( "mouseover_node", function( d, i ) { 
+        d3.select(obj.widgetElement).select("#labelDiv")
+          .html( x.labels[i] );
+      } );
+
+      obj.net.on( "mouseout_node", function( d, i ) { 
+        d3.select(obj.widgetElement).select("#labelDiv")
+          .html( "&nbsp;" );
+      } );
+
+
+      obj.net.update()
 
     }
 

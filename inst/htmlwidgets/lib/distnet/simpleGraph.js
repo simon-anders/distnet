@@ -32,7 +32,10 @@ function simpleGraph( svgElement, nodePos, edgeList ) {
        obj.update() 
      } )
 
-  
+  // event handling
+  obj.dispatch = d3.dispatch( "mouseover_node", "mouseout_node" );
+  obj.on = function() { obj.dispatch.on.apply( obj.dispatch, arguments ); }
+
   obj.update = function( ) {
 
     // edges
@@ -52,7 +55,9 @@ function simpleGraph( svgElement, nodePos, edgeList ) {
       .data( nodePos );
     sel.enter().append("circle")
       .attr( "r", 6 )
-      .call( drag );
+      .call( drag )
+      .on( "mouseover", obj.dispatch.mouseover_node )
+      .on( "mouseout", obj.dispatch.mouseout_node );
     sel.exit().remove()
     sel
       .attr( "cx", function(d) { return obj.scaleX( d.x ) } )
