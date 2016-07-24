@@ -13,5 +13,6 @@ dependencies:
     src: htmlwidgets/lib/distnet
     script: 
       - colorbar.js
+      - sigmoidColorSlider.js
       - simpleGraph.js
       - distnet.js
