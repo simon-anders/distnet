@@ -9,6 +9,7 @@ HTMLWidgets.widget({
     d3.select(el).html(
       "<table>" +
       "  <tr><td><svg id=\"distnetSvg\"></svg></td></tr>" +
+      "  <tr><td><div id=\"labelDiv\"></div></td></tr>" +
       "  <tr><td><div id=\"sliderDiv\"></div></td></tr>" +
       "</table>"
     )
@@ -19,7 +20,7 @@ HTMLWidgets.widget({
 
     obj.renderValue = function( x ) {
 
-      var slider = sigmoidColorSlider( 
+      obj.slider = sigmoidColorSlider( 
          d3.select(obj.widgetElement).select("#sliderDiv"), 
          d3.max( d3.max( x.distmat ) ) );
 
@@ -29,9 +30,9 @@ HTMLWidgets.widget({
         d3.select(obj.widgetElement).select("#distnetSvg"), 
         x.pointpos.map( function(a) { return { x: a[0], y: a[1] } } ), 
         x.distmat,
-        slider.scale );
+        obj.slider.scale );
 
-      slider.onChange( theNet.update, theNet );
+      obj.slider.on( "change.distnetR", theNet.update );
 
       theNet.update()
 
@@ -43,7 +44,7 @@ HTMLWidgets.widget({
       d3.select(obj.widgetElement).select("#distnetSvg")
         .attr( "width", width )
         .attr( "height", d3.max([ 100, height - sliderHeight ]) );
-      // render update missing?
+      obj.slider.update();
     }
 
     return obj;

@@ -53,6 +53,10 @@ function sigmoidColorSlider( divElement, maxVal, minColor, maxColor ) {
     .value( 50 / threshSlider.max() );
   td3.call( slopeSlider )      
 
+  obj.dispatch = d3.dispatch( "change" );
+
+  obj.on = function() { obj.dispatch.on.apply( obj.dispatch, arguments ); }
+
   obj.update = function( ) {
     
     obj.scale = function( x ) { return sigmoid( x, threshSlider.value(), -slopeSlider.value(), .05 ) }; 
@@ -67,23 +71,10 @@ function sigmoidColorSlider( divElement, maxVal, minColor, maxColor ) {
 
     theColorBar.update();
 
-    for( var i = 0; i < obj.changeListeners.length; i++ ) {
-      obj.changeListeners[i].fun.call( obj.changeListeners[i].thisArg );
-    }
-
   }
 
-  obj.changeListeners = [];
-
-  obj.onChange = function( fun, thisArg, add ) {
-    if( !add ) {
-      obj.changeListeners = [];
-    } 
-    obj.changeListeners.push( { fun: fun, thisArg: thisArg } );
-  }
-
-  threshSlider.on( "slide", obj.update );
-  slopeSlider.on( "slide", obj.update );
+  threshSlider.on( "slide", function() { obj.update(); obj.dispatch.change(); } );
+  slopeSlider.on( "slide", function() { obj.update(); obj.dispatch.change(); } );
 
   obj.update();
 
