@@ -31,6 +31,8 @@ HTMLWidgets.widget({
         x.pointpos.map( function(a) { return { x: a[0], y: a[1] } } ), 
         x.distmat,
         obj.slider.scale );
+      obj.net.colors( x.colors );
+      console.log( obj.net.colors() );
 
       obj.slider.on( "change.distnetR", obj.net.update, obj.net );
 

@@ -1,4 +1,4 @@
-distnet <- function( dists, conf = NULL, labels = NULL ) {
+distnet <- function( dists, conf = NULL, labels = NULL, colors = NULL ) {
   
   if( inherits( dists, "dist") ) 
     dists <- as.matrix(dists)
@@ -19,8 +19,12 @@ distnet <- function( dists, conf = NULL, labels = NULL ) {
     labels <- rownames( dists )
   stopifnot( length(labels) == nrow(dists) )
 
+  if( is.null(colors) )
+    colors <- rep( "black", nrow(dists) )
+  stopifnot( length(colors) == nrow(dists) )
+
   htmlwidgets::createWidget( "distnetR", 
-    list( distmat=dists, pointpos=conf, labels=labels ) )
+    list( distmat=dists, pointpos=conf, labels=labels, colors=colors ) )
 
 }
 
