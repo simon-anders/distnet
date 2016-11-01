@@ -14,5 +14,6 @@ dependencies:
     script: 
       - colorbar.js
       - sigmoidColorSlider.js
+      - scatter.js
       - simpleGraph.js
       - distnet.js

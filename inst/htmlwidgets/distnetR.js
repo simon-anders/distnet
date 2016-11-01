@@ -8,9 +8,9 @@ HTMLWidgets.widget({
   
     d3.select(el).html(
       "<table>" +
-      "  <tr><td><svg id=\"distnetSvg\"></svg></td></tr>" +
-      "  <tr><td><div id=\"labelDiv\">&nbsp;</div></td></tr>" +
-      "  <tr><td><div id=\"sliderDiv\"></div></td></tr>" +
+      "  <tr><td><svg id=\"distnetSvg\"></svg></td><td><svg id=\"scatterSvg\"></svg></td></tr>" +
+      "  <tr><td><div id=\"labelDiv\">&nbsp;</div></td><td></td></tr>" +
+      "  <tr><td><div id=\"sliderDiv\"></div></td><td></td></tr>" +
       "</table>"
     )
 
@@ -19,6 +19,8 @@ HTMLWidgets.widget({
     obj.widgetElement = el;
 
     obj.renderValue = function( x ) {
+
+      obj.withScatter = x.datamat !== undefined;
 
       obj.slider = sigmoidColorSlider( 
          d3.select(obj.widgetElement).select("#sliderDiv"), 
@@ -32,7 +34,10 @@ HTMLWidgets.widget({
         x.distmat,
         obj.slider.scale );
       obj.net.colors( x.colors );
-      console.log( obj.net.colors() );
+
+      obj.scatterPlot = scatterPlot( 
+        d3.select(obj.widgetElement).select("#scatterSvg"), 
+        [ {x: 1, y: 2}, {x: 5, y: 5}, {x: 9, y: 1}, {x: 3, y: 7} ] );
 
       obj.slider.on( "change.distnetR", obj.net.update, obj.net );
 
@@ -47,7 +52,9 @@ HTMLWidgets.widget({
       } );
 
 
-      obj.net.update()
+      obj.net.update();
+      if( obj.withScatter )
+         obj.scatterPlot.update();
 
     }
 
@@ -55,7 +62,10 @@ HTMLWidgets.widget({
       var sliderHeight = d3.select(obj.widgetElement).select("#sliderDiv")
         .node().getBoundingClientRect().height; 
       d3.select(obj.widgetElement).select("#distnetSvg")
-        .attr( "width", width )
+        .attr( "width", obj.withScatter ? width/2 : width )
+        .attr( "height", d3.max([ 100, height - sliderHeight ]) );
+      d3.select(obj.widgetElement).select("#scatterSvg")
+        .attr( "width", obj.withScatter ? width/2 : 0 )
         .attr( "height", d3.max([ 100, height - sliderHeight ]) );
       obj.slider.update();
     }
