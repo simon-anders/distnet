@@ -1,0 +1,53 @@
+<html>
+<head>
+
+<script src="../inst/htmlwidgets/lib/d3-4.3.0/d3.js"></script>
+<script src="/home/anderss/work/repos/linked-charts/build/d3-linked-charts.js"></script>
+<script src="../inst/htmlwidgets/lib/distnet/simpleGraph.js"></script>
+
+<script src="inputdata.json.js"></script>
+
+</head>
+
+<body>
+
+<script>
+
+var el = d3.select("body");
+el.append("div")
+  .attr( "id", "chart" );
+el.append("div")
+  .attr( "id", "slider" );
+
+var dark = d3.rgb( 0, 0, 90 )
+
+var slider = d3.sigmoidColorSlider()
+   .straightColorScale( d3.scaleLinear()
+      .range( [ dark, "white" ] )
+      .domain( [ 0, d3.max( d3.max( inputdata.distmat ) ) ] ) )
+   .on_change( function(){
+      chart.update() 
+   })
+   .place("#slider");
+
+var chart = simpleGraph()
+   .npoints( inputdata.points2D.length )
+   .x( function(i) { return inputdata.points2D[i][0] } )
+   .y( function(i) { return inputdata.points2D[i][1] } )
+   .transitionDuration( 0 )
+   .edge_present( function( i, j ) { return slider.the_sigmoid( inputdata.distmat[i][j] ) < .9 } )
+   .edge_dresser( function( sel ) { 
+      console.log( sel.size() )
+      sel.style( "display", function(d) { return slider.the_sigmoid( inputdata.distmat[d[0]][d[1]] ) > .9 ? "none" : "initial" } )
+      sel.style( "stroke", dark )
+      sel.style( "stroke-opacity", function(d) { 
+        return 1 - slider.the_sigmoid( inputdata.distmat[d[0]][d[1]] ); } )
+   } )
+   .place("#chart")
+	
+
+
+</script>
+	
+</body>
+</html>
