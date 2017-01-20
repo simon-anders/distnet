@@ -13,6 +13,12 @@
 
 <script>
 
+// redraw queue
+
+
+
+// main script
+
 var el = d3.select("body");
 el.append("div")
   .attr( "id", "chart" );
@@ -24,28 +30,64 @@ var dark = d3.rgb( 0, 0, 90 )
 var slider = d3.sigmoidColorSlider()
    .straightColorScale( d3.scaleLinear()
       .range( [ dark, "white" ] )
-      .domain( [ 0, d3.max( d3.max( inputdata.distmat ) ) ] ) )
-   .on_change( function(){
-      chart.update() 
+      .domain( [ 0, d3.max( d3.max( inputdata.distmat ) ) ] ) );
+slider.last_redraw = -Infinity;   
+slider   
+   .on_drag( function() {
+      if( slider.final_redraw_timer ) {
+         slider.final_redraw_timer.stop();
+      }
+      if( d3.now() - slider.last_redraw < 10 ) {
+         slider.final_redraw_timer = d3.timeout( 
+            function() { chart.update_edges(); },
+            20 );
+         return;
+      } else {
+         chart.update_edges();
+         slider.last_redraw = d3.now();
+      }
+   })
+   .on_change( function () {
+      chart.update_edges();
    })
    .place("#slider");
 
-var chart = simpleGraph()
+var chart = simpleGraph( "graph" )
    .npoints( inputdata.points2D.length )
    .x( function(i) { return inputdata.points2D[i][0] } )
    .y( function(i) { return inputdata.points2D[i][1] } )
    .transitionDuration( 0 )
    .edge_present( function( i, j ) { return slider.the_sigmoid( inputdata.distmat[i][j] ) < .9 } )
    .edge_dresser( function( sel ) { 
-      console.log( sel.size() )
-      sel.style( "display", function(d) { return slider.the_sigmoid( inputdata.distmat[d[0]][d[1]] ) > .9 ? "none" : "initial" } )
       sel.style( "stroke", dark )
       sel.style( "stroke-opacity", function(d) { 
         return 1 - slider.the_sigmoid( inputdata.distmat[d[0]][d[1]] ); } )
    } )
    .place("#chart")
 	
+chart.update_edges = function() {
+   d3.selectAll(".graph_edge")
+      .style( "stroke-opacity", function(d) { 
+         return 1 - slider.the_sigmoid( inputdata.distmat[d[0]][d[1]] ); } );   
+}
+/*
+var vertices = chart.get_layer("graph").get_dataIds();
 
+var edgeNodes = d3.selectAll(".graph_edge").nodes()
+
+// Construct edge list of complete graph
+var edges = [];
+var k = 0;
+for (var i = 0; i < vertices.length; i++ ) {
+  for (var j = i+1; j < vertices.length; j++ ) {
+    edges.push( { from: vertices[i], to: vertices[j], node: edgeNodes[k], dist: inputdata.distmat[vertices[i]][vertices[j]] } )
+    k++
+  }
+}
+*/
+
+var quickUpdate = function() {
+}
 
 </script>
 	
