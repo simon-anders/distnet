@@ -54,7 +54,10 @@
 			.add_property("layerDomainY")
 			.add_property("contScaleX", true)
 			.add_property("contScaleY", true)
-			.add_property("on_click", function() {});
+			.add_property("pointMouseOver", function() {})
+			.add_property("pointMouseOut", function() {})
+			.add_property("on_click", function() {})
+			.add_property("markedUpdated", function() {});
 
 		layer.add_click_listener = function(){
 
@@ -116,6 +119,8 @@
 		          .attr("width", 1)
 		          .attr("height", 1);
 		      }
+		      layer.chart.container.select(".inform")
+		      	.classed("blocked", true);
 		    })
 		    .on("mousemove", function() {
 		      var s = layer.g.select(".selection");
@@ -175,7 +180,11 @@
 		      }
 		    })
 		    .on("mouseup", function() {
+		      var mark = d3.event.shiftKey;
 		      // remove selection frame
+		      layer.chart.container.select(".inform")
+		      	.classed("blocked", false);
+
 		      var x = layer.g.selectAll("rect.selection").attr("x") * 1,
 		        y = layer.g.selectAll("rect.selection").attr("y") * 1,
 		        w = layer.g.selectAll("rect.selection").attr("width") * 1,
@@ -192,11 +201,12 @@
 		                    //console.log("doubleclick");
 		                    window.clearTimeout(wait_dblClick);
 		                    wait_dblClick = null;
-		                    points.on("dblclick").apply(points);
+		                    points.on("dblclick").apply(points, [mark]);
 		        } else {
 		          wait_dblClick = window.setTimeout((function(e) {
+		          							//var mark = e.shiftKey;
 		                        return function() {
-		                            points.on("click").apply(points, [pos]);
+		                            points.on("click").call(points, pos, mark);
 		                            wait_dblClick = null;
 		                        };
 		                    })(d3.event), 300);
@@ -204,42 +214,32 @@
 		        click_coord = d3.mouse(document.body);
 		        return;
 		      }
-
-		      d3.selectAll(".tmp-selection")
-		        .classed("tmp-selection",false)
-		        .classed("selected", false);
-		      
 		      // remove temporary selection marker class
-		      layer.zoom(lu, rb);
+		      if(mark)
+		      	d3.selectAll(".selected")
+		      		.classed("marked", true);
+	      	d3.selectAll(".tmp-selection")
+	        	.classed("tmp-selection",false)
+	        	.classed("selected", false)
+		      mark ? layer.get_markedUpdated() : layer.zoom(lu, rb);
 		    } )
-		    .on("dblclick", function(){
+		    .on("dblclick", function(mark){
 		      console.log("doubleclick");
-		      layer.resetDomain();
-		      /*var update = false;
-		      if(self.dataPoints.savedColOrder && 
-		        self.dataPoints.savedColOrder.length != self.dataPoints.colOrder.length
-		      ){
-		        self.dataPoints.colOrder = self.dataPoints.savedColOrder.slice();
-		        update = true;
-		      }
-		      if(self.dataPoints.savedRowOrder && 
-		        self.dataPoints.savedRowOrder.length != self.dataPoints.rowOrder.length
-		      ){
-		        self.dataPoints.rowOrder = self.dataPoints.savedRowOrder.slice();
-		        update = true;
-		      }
-		      if(update)
-		        self.updatePlot();*/
+		      mark ? layer.chart.container.selectAll(".marked").classed("marked", false) : layer.resetDomain();
 		    })  
 
-		    .on("click", function(p){
-
+		    .on("click", function(p, mark){
 		      console.log("click");
-		      console.log(p);
+		      console.log(p, mark);
 		      var clickedPoint = layer.findPoints(p, p);
 		      if(!clickedPoint.empty()){
-		      	var click = clickedPoint.on("click");
-		      	click.apply(clickedPoint, [clickedPoint.datum()]); 
+		      	if(!mark){
+		      		var click = clickedPoint.on("click");
+		      		click.apply(clickedPoint, [clickedPoint.datum()]); 
+		      	} else {
+		      		clickedPoint.classed("marked") ? clickedPoint.classed("marked", false) : clickedPoint.classed("marked", true);
+		      		layer.get_markedUpdated();
+		      	}
 		      }
 		    });
 
@@ -318,9 +318,9 @@
 		
 		//Basic layer functionality
 		chart.layers = {};
-		
+
 		chart.get_nlayers = function() {
-			return chart.layers.length;
+			return Object.keys(chart.layers).length;
 		}
 		chart.get_layer = function(k) {
 			return chart.layers[k];
@@ -350,10 +350,14 @@
 			return chart;
 		}
 		
-	/*	var inherited_put_static_content = chart.put_static_content;
+		var inherited_put_static_content = chart.put_static_content;
 		chart.put_static_content = function(element){
 			inherited_put_static_content(element);
-		}*/
+			chart.container.append("div")
+				.attr("class", "inform hidden")
+				.append("p")
+					.attr("class", "value");		
+		}
 
 		var inherited_update = chart.update;
 		chart.update = function() {
@@ -363,8 +367,8 @@
 				chart.get_layer(k).update();
 			
 			chart.svg.select(".clickPanel")
-				.attr("x", chart.get_margin().left)
-				.attr("y", chart.get_margin().top)
+				//.attr("x", chart.get_margin().left)
+				//.attr("y", chart.get_margin().top)
 				.attr("width", chart.get_width())
 				.attr("height", chart.get_height());
 
@@ -485,58 +489,61 @@
 			
 			return chart;
 		}
-		
-	  var inherited_put_static_content = chart.put_static_content;
-	  chart.put_static_content = function( element ) {
-	    inherited_put_static_content( element );
 
-	    chart.axes = {};
+		var inherited_put_static_content = chart.put_static_content;
+	  	chart.put_static_content = function( element ) {
+	    	inherited_put_static_content( element );
+
+	    	chart.axes = {};
 			
 			var g = chart.svg.append("g")
 				.attr("transform", "translate(" + chart.get_margin().left + 
 					", " + chart.get_margin().top + ")");
 			
-	    chart.axes.x_g = g.append( "g" )
-	      .attr( "class", "x axis" )
-	      .attr( "transform", "translate(0," + chart.get_height() + ")" );
-	    chart.axes.x_label = chart.axes.x_g.append( "text" )
-	      .attr( "class", "label" )
-	      .style( "text-anchor", "end" );
+	   	chart.axes.x_g = g.append( "g" )
+	      	.attr( "class", "x axis" )
+	      	.attr( "transform", "translate(0," + chart.get_height() + ")" );
+	    	chart.axes.x_label = chart.axes.x_g.append( "text" )
+	      	.attr( "class", "label" )
+	      	.style( "text-anchor", "end" );
 
-	    chart.axes.y_g = g.append( "g" )
-	      .attr( "class", "y axis" )
-	    chart.axes.y_label = chart.axes.y_g.append( "text" )
-	      .attr( "class", "label" )
-	      .attr( "transform", "rotate(-90)" )
-	      .style( "text-anchor", "end" );
-	  }	
+	    	chart.axes.y_g = g.append( "g" )
+	      	.attr( "class", "y axis" )
+	    	chart.axes.y_label = chart.axes.y_g.append( "text" )
+	      	.attr( "class", "label" )
+	      	.attr( "transform", "rotate(-90)" )
+	      	.style( "text-anchor", "end" );
+	  	}	
 		
 		var inherited_update = chart.update;
 		
 		chart.update = function() {
 		
 			//set scales and update axes
-			if(chart.get_domainX().length == 2)
+			var domainX = chart.get_domainX();
+			if(domainX.length == 2 & typeof domainX[0] === "number")
 				chart.axes.scale_x = d3.scaleLinear()
-					.domain( chart.get_domainX() )
+					.domain( domainX )
 					.range( [ 0, chart.get_width() ] )
 					.nice()
-			else
-				chart.axes.scale_x = d3.scaleQuantize()
-					.domain( chart.get_domainX() )
+			else{
+				chart.axes.scale_x = d3.scalePoint()
+					.domain( domainX )
 					.range( [0, chart.get_width()] )
-					.nice();	
+					.padding(0.3);	
+			}
 			
-			if(chart.get_domainY().length == 2)
+			var domainY = chart.get_domainY();
+			if(domainY.length == 2 & typeof domainY[0] === "number")
 				chart.axes.scale_y = d3.scaleLinear()
-					.domain( chart.get_domainY() )
+					.domain( domainY )
 					.range( [chart.get_height(), 0] )
 					.nice()
 			else
-				chart.axes.scale_x = d3.scaleQuantize()
-					.domain( chart.get_domainY() )
+				chart.axes.scale_y = d3.scalePoint()
+					.domain( get_domainY )
 					.range( [chart.get_height(), 0] )
-					.nice();
+					.padding(0.3);
 			
 			inherited_update();
 			
@@ -573,10 +580,12 @@
 		
 		chart.add_property("colLabels", function(i) {return i;})
 			.add_property("rowLabels", function(i) {return i;})
-			.add_property("colIds", function() {return d3.range(chart.get_ncols());})
-			.add_property("rowIds", function() {return d3.range(chart.get_nrows());})
-			.add_property("heatmapRow", function(rowId) {return chart.get_rowIds().indexOf(rowId);})
-			.add_property("heatmapCol", function(colId) {return chart.get_colIds().indexOf(colId);})
+			.add_property("colIds", function() {return undefined})
+			.add_property("rowIds", function() {return undefined})
+			.add_property("dispColIds", function() {return chart.get_colIds();})
+			.add_property("dispRowIds", function() {return chart.get_rowIds();})
+			.add_property("heatmapRow", function(rowId) {return chart.get_dispRowIds().indexOf(rowId);})
+			.add_property("heatmapCol", function(colId) {return chart.get_dispColIds().indexOf(colId);})
 			.add_property("labelMouseOver")
 			.add_property("labelMouseOut")
 			.add_property("colStyle", "")
@@ -592,35 +601,46 @@
 			typeof f == "function" ? chart.get_rowIds = f : chart.get_rowIds = function() {return f;};
 		}
 	*/
-
+		
 		//make nrows and ncols protected from recursion
 		//if get_colIds and get_rowIds are not using get_ncols
 		//and get_nrows, the number of rows and columns will be
 		//set equal to the number of Ids
-		chart.nrows((function() {
+		chart.ncols = function(n){
+			if(!chart.get_colIds())
+				chart.colIds(d3.range(n));
+			return chart;
+		}
+		chart.nrows = function(n){
+			if(!chart.get_rowIds())
+				chart.rowIds(d3.range(n));
+			return chart;
+		}
+
+		chart.get_nrows = (function() {
 				var inFun = false;
 				return function(){
 					if(inFun) return undefined;
 					inFun = true;
 					try {
-						return chart.get_rowIds().length;
+						return chart.get_dispRowIds().length;
 					} finally {
 						inFun = false;
 					}
 				}
-			})())
-			.ncols((function() {
+			})();
+		chart.get_ncols = (function() {
 				var inFun = false;
 				return function(){
 					if(inFun) return undefined;
 					inFun = true;
 					try {
-						return chart.get_colIds().length;
+						return chart.get_dispColIds().length;
 					} finally {
 						inFun = false;
 					}
 				}
-			})());
+			})();
 
 		//set default hovering behaviour
 		chart.labelMouseOver(function() {
@@ -642,21 +662,24 @@
 					ids = ids.reverse();
 					return;
 				}
-				var actIds = chart.get_rowIds(),
+				if(rowId == "__order__")
+					return ids.sort(f);
+				var actIds = chart.get_dispRowIds(),
 					orderedIds = ids.filter(function(e) {
 						return actIds.indexOf(e) != -1;
 					});
 				if(orderedIds.length != actIds.length) {
 					orderedIds = actIds.sort(f);
 					ids = orderedIds.slice();
-				}
+				} 
+				
 				ind = orderedIds.indexOf(rowId);
 				if(ind > -1)
 					 return ind
 				else
 					throw "Wrong rowId in chart.get_heatmapRow";
 			});
-			
+			chart.update();
 			return chart;
 		}
 		chart.reorderCol = function(f){
@@ -671,8 +694,10 @@
 					ids = ids.reverse();
 					return;
 				}
+				if(colId == "__order__")
+					return ids.sort(f);
 
-				var actIds = chart.get_colIds(),
+				var actIds = chart.get_dispColIds(),
 					orderedIds = ids.filter(function(e) {
 						return actIds.indexOf(e) != -1;
 					});
@@ -680,12 +705,14 @@
 					orderedIds = actIds.sort(f);
 					ids = orderedIds.slice();
 				}
+				
 				ind = orderedIds.indexOf(colId);
 				if(ind > -1)
 					 return ind
 				else
 					throw "Wrong rowId in chart.get_heatmapRow";
 			});
+			chart.update();
 			return chart;
 		}
 		
@@ -696,11 +723,7 @@
 			inherited_put_static_content(element);
 			
 			//chart.container.style("position", "relative");
-			chart.container.append("div")
-				.attr("class", "inform hidden")
-				.append("p")
-					.attr("class", "value");
-					
+
 			//create main parts of the heatmap
 			chart.svg.append("g")
 				.attr("class", "row label_panel");
@@ -744,7 +767,7 @@
 
 			//add column labels
 			var colLabels = chart.svg.select(".col").selectAll(".label")
-					.data(chart.get_colIds().slice());
+					.data(chart.get_dispColIds().slice());
 			colLabels.exit()
 				.remove();
 			colLabels.enter()
@@ -762,7 +785,7 @@
 			
 			//add row labels
 			var rowLabels = chart.svg.select(".row").selectAll(".label")
-					.data(chart.get_rowIds().slice());
+					.data(chart.get_dispRowIds().slice());
 			rowLabels.exit()
 				.remove();
 			rowLabels.enter()
@@ -790,7 +813,7 @@
 		if(chart === undefined)
 			chart = axisChartBase();
 		if(id === undefined)
-			id = "layer" + chart.layers.length;
+			id = "layer" + chart.get_nlayers();
 
 	  var layer = chart.add_layer(id)
 			.add_property("x")
@@ -799,6 +822,7 @@
 			.add_property("npoints")
 			.add_property("dataIds")
 	    .add_property("size", 4)
+	    .add_property("colour", "black")
 			.add_property("groupName", function(i){return i;});
 		chart.setActiveLayer(id);
 		
@@ -853,11 +877,48 @@
 	  })
 		
 		layer.layerDomainX(function() {
-			return d3.extent( layer.get_dataIds(), function(k) { return layer.get_x(k) } )
+			if(layer.get_contScaleX()){
+	      return d3.extent( layer.get_dataIds(), function(k) { return layer.get_x(k) } )
+	    } else {
+	      return layer.get_dataIds().map(function(e) { return layer.get_x(e);});
+	    }
 		});
 		layer.layerDomainY(function() {
-			return d3.extent( layer.get_dataIds(), function(k) { return layer.get_y(k) } )
+	    if(layer.get_contScaleY()) {
+			  return d3.extent( layer.get_dataIds(), function(k) { return layer.get_y(k) } )
+	    } else{
+	      return layer.get_dataIds().map(function(e) { return layer.get_y(e);});
+	    }
 		});
+
+	  //default hovering behaviour
+	  layer.pointMouseOver(function(d){
+	    //change colour and class
+	    d3.select(this)
+	      .attr("fill", function(d) {
+	        return d3.rgb(layer.get_colour(d)).darker(0.5);
+	      })
+	      .classed("hover", true);
+	    //show label
+	    layer.chart.container.select(".inform")
+	        .style("left", (d3.event.pageX + 10) + "px")
+	        .style("top", (d3.event.pageY - 10) + "px")
+	        .select(".value")
+	          .html("ID: <b>" + d + "</b>;<br>" + 
+	            "x = " + layer.get_x(d) + ";<br>" + 
+	            "y = " + layer.get_y(d));  
+	    layer.chart.container.select(".inform")
+	      .classed("hidden", false);
+	  });
+	  layer.pointMouseOut(function(d){
+	    d3.select(this)
+	      .attr("fill", function(d) {
+	        return layer.get_colour(d);
+	      })
+	      .classed("hover", false);
+	    layer.chart.container.select(".inform")
+	      .classed("hidden", true);
+	  })
 
 		//for now there is no inherited_update for a layer
 	  //var inherited_update = obj.update;
@@ -884,10 +945,13 @@
 	      .remove();  
 	    sel.enter().append( "circle" )
 	      .attr( "class", "data_point" )
-	      .attr( "r", function(d) {return layer.get_size(d)} )
-	    .merge( sel )
 	      .on( "click", layer.get_on_click )
+	      .on( "mouseover", layer.get_pointMouseOver)
+	      .on( "mouseout", layer.get_pointMouseOut)
+	    .merge( sel )
 	      .transition(layer.chart.transition)
+	        .attr( "r", function(d) {return layer.get_size(d)} )
+	        .attr( "fill", function(d) { return layer.get_colour(d)})
 	        .attr( "cx", function(d) { return layer.chart.axes.scale_x( layer.get_x(d) ) } )
 	        .attr( "cy", function(d) { return layer.chart.axes.scale_y( layer.get_y(d) ) } )
 	        .attr( "style", function(d) { return layer.get_style(d) } );
@@ -903,7 +967,7 @@
 		if(chart === undefined)
 			chart = axisChartBase();
 		if(id === undefined)
-			id = "layer" + chart.layers.length;
+			id = "layer" + chart.get_nlayers();
 		
 		var layer = chart.add_layer(id)
 			.add_property("nlines")
@@ -984,6 +1048,85 @@
 	  }
 	}
 
+	function separateBy(data, properties){
+	  if(typeof data !== "object")
+	    throw "Error in function 'separateBy': first argument is not an object";
+	  
+	  //check if data is an object or an array
+	  var type;
+	  typeof data.length === "undefined" ? type = "obj" : type = "arr";
+
+	  if(typeof properties === "number" || typeof properties === "string")
+	    properties = [properties];
+	  //turn "properities" into an array and throw an Error if this isn't possible
+	  if(typeof properties.length === "undefined")
+	    throw "Error in function 'separateBy': " + properties.toString() +
+	          " is not a property name"; 
+	  
+	  //end of a recursive function. There are no more properties to
+	  //separate by
+	  if(properties.length == 0)
+	    return data;
+
+	  var newData = {}, uniqueList = [], keys, value;
+	  //if data is an array, keys = ["0", "1", "2", ...]
+	  var keys = Object.keys(data);
+
+	  //go through all elements to find all possible values of the selected property
+	  for(var i = 0; i < keys.length; i++){
+	    if(typeof data[keys[i]][properties[0]] !== "undefined" &&
+	      uniqueList.indexOf(data[keys[i]][properties[0]]) == -1
+	    )
+	      uniqueList.push(data[keys[i]][properties[0]]);
+	  }
+
+	  //if none of the objects have this property, continue with the next step
+	  //of the recursion
+	  if(uniqueList.length == 0){
+	    properties.shift();
+	    return separateBy(data, properties)
+	  }
+	  //otherwise initialize properties of the new object
+	  for(var i = 0; i < uniqueList.length; i++)
+	    type == "obj" ? newData[uniqueList[i]] = {} : newData[uniqueList[i]] = [];
+
+	  //go through all the elements again and place them in a suitable category
+	  for(var i = 0; i < keys.length; i++){
+	    value = data[keys[i]][properties[0]];
+	    if(typeof value !== "undefined"){
+	      delete data[keys[i]][properties[0]];
+	      if(type == "obj") newData[value][keys[i]] = {};
+	      type == "obj" ? Object.assign(newData[value][keys[i]], data[keys[i]]) :
+	                      newData[value].push(data[keys[i]]);
+	    }
+	  }
+	  //if type is array but all values of the property are unique change arrays in objects
+	  //May be this should be optional
+	  if(type == "arr"){
+	    var change = true, i = 0;
+	    while(change && i < uniqueList.length){
+	      change = (newData[uniqueList[i]].length == 1);
+	      i++;
+	    }
+	    if(change){
+	      var a;
+	      for(var i = 0; i < uniqueList.length; i++){
+	        a = {};
+	        Object.assign(a, newData[uniqueList[i]][0]);
+	        newData[uniqueList[i]] = {};
+	        Object.assign(newData[uniqueList[i]], a);
+	      }
+	    }
+	  }
+	  //Now go through all the properties of the new object and call this function
+	  //recursively
+	  properties.shift();
+	  
+	  for(var i = 0; i < uniqueList.length; i++)
+	    newData[uniqueList[i]] = separateBy(newData[uniqueList[i]], properties.slice());
+	  return newData;
+	}
+
 	function fireEvent(element,event){
 		if (document.createEventObject){
 			// dispatch for IE
@@ -1013,7 +1156,7 @@
 		if(chart === undefined)
 			chart = tableChartBase();
 		if(id === undefined)
-			id = "layer" + chart.layers.length;
+			id = "layer" + chart.get_nlayers();
 		
 		//TO DO: See if we need colIds and rowIds to be stored separately for
 		//each layer
@@ -1025,8 +1168,6 @@
 			.add_property("palette", d3.interpolateOrRd)
 			.add_property("colourRange", function() {return layer.dataRange()})
 			.add_property("labelClick", function() {})
-			.add_property("cellMouseOver", function() {})
-			.add_property("cellMouseOut", function() {})
 			.add_property("clusterRowsMetric", getEuclideanDistance)
 			.add_property("clusterColsMetric", getEuclideanDistance);
 		
@@ -1056,8 +1197,11 @@
 		layer.findPoints = function(lu, rb){
 			return layer.g.selectAll(".data_point")
 				.filter(function(d) {
-					var loc = [layer.chart.axes.scale_x(layer.chart.get_heatmapCol(d[1])), 
-										layer.chart.axes.scale_y(layer.get_heatmapRow(d[0]))]
+					//slow if reordered
+					//var loc = [layer.chart.axes.scale_x(layer.chart.get_heatmapCol(d[1])), 
+					//					layer.chart.axes.scale_y(layer.get_heatmapRow(d[0]))]
+					var loc = [this.x.baseVal.value, 
+											d3.select(this.parentNode).attr("y")*1];
 					return (loc[0] <= rb[0]) && (loc[1] <= rb[1]) && 
 						(loc[0] + layer.chart.cellSize.width >= lu[0]) && 
 						(loc[1] + layer.chart.cellSize.height>= lu[1]);
@@ -1065,9 +1209,34 @@
 		}
 
 		layer.zoom = function(lu, rb){
-			
+			var selectedCells = layer.findPoints(lu, rb),
+				rowIdsAll = selectedCells.data().map(function(d){
+					return d[0];
+				}),
+				colIdsAll = selectedCells.data().map(function(d){
+					return d[1];
+				}),
+				rowIds = [], colIds = [];
+
+			for(var i = 0; i < rowIdsAll.length; i++)
+				if(rowIds.indexOf(rowIdsAll[i]) == -1)
+					rowIds.push(rowIdsAll[i]);
+			for(var i = 0; i < colIdsAll.length; i++)
+				if(colIds.indexOf(colIdsAll[i]) == -1)
+					colIds.push(colIdsAll[i]);
+
+			layer.dispRowIds(rowIds);
+			layer.dispColIds(colIds);
+			layer.chart.update();
+			//if(!layer.reZoom)
 
 			return layer;
+		}
+
+		layer.resetDomain = function(){
+			layer.dispColIds(function() {return layer.get_colIds()});
+			layer.dispRowIds(function() {return layer.get_rowIds()});
+			layer.chart.update();
 		}
 			
 		//reset a colourScale
@@ -1096,7 +1265,7 @@
 		
 		//some default onmouseover and onmouseout behaviour for cells and labels
 		//may be later moved out of the main library
-		layer.cellMouseOver(function(d) {
+		layer.pointMouseOver(function(d) {
 			//change colour and class
 			d3.select(this)
 				.attr("fill", function(d) {
@@ -1121,7 +1290,7 @@
 			layer.chart.container.select(".inform")
 				.classed("hidden", false);
 		});
-		layer.cellMouseOut(function() {
+		layer.pointMouseOut(function(d) {
 			//change colour and class
 			d3.select(this)
 				.attr("fill", function(d) {
@@ -1188,7 +1357,7 @@
 						layer.get_margin().top + ")");
 						
 			//add rows
-			var rows = layer.g.selectAll(".data_row").data(layer.get_rowIds().slice());
+			var rows = layer.g.selectAll(".data_row").data(layer.get_dispRowIds().slice());
 			rows.exit()
 				.remove();
 			rows.enter()
@@ -1197,13 +1366,16 @@
 				.merge(rows).transition(layer.chart.transition)
 					.attr("transform", function(d) {
 						return "translate(0, " + 
-							layer.chart.axes.scale_y(layer.get_heatmapRow(d)) + ")";
+							layer.chart.axes.scale_y(layer.get_heatmapRow(d)) + ")"
+					})
+					.attr("y", function(d) {
+						return layer.chart.axes.scale_y(layer.get_heatmapRow(d))
 					});
 							
 			//add cells	
 			var cells = layer.g.selectAll(".data_row").selectAll(".data_point")
 				.data(function(d) {
-					return layer.get_colIds().map(function(e){
+					return layer.get_dispColIds().map(function(e){
 						return [d, e];
 					})
 				});
@@ -1212,8 +1384,8 @@
 			cells.enter()
 				.append("rect")
 					.attr("class", "data_point")
-					.on("mouseover", layer.get_cellMouseOver)
-					.on("mouseout", layer.get_cellMouseOut)
+					.on("mouseover", layer.get_pointMouseOver)
+					.on("mouseout", layer.get_pointMouseOut)
 					.on("click", function(d) {
 						layer.get_on_click(d[0], d[1]);
 					})
@@ -1258,12 +1430,12 @@
 			//create an object to store information on each cell of a heatmap
 			var pixelData = new ImageData(layer.get_ncols(), layer.get_nrows());
 
-			for(var i = 0; i < layer.get_rowIds().length; i++)
-				for(var j = 0; j < layer.get_colIds().length; j++) {
-						rgbColour = d3.rgb(layer.get_colour(layer.get_value(layer.get_rowIds()[i], 
-																														layer.get_colIds()[j])));
-						position = layer.get_heatmapRow(layer.get_rowIds()[i]) * layer.get_ncols() * 4 +
-							layer.get_heatmapCol(layer.get_colIds()[j]) * 4;
+			for(var i = 0; i < layer.get_dispRowIds().length; i++)
+				for(var j = 0; j < layer.get_dispColIds().length; j++) {
+						rgbColour = d3.rgb(layer.get_colour(layer.get_value(layer.get_dispRowIds()[i], 
+																														layer.get_dispColIds()[j])));
+						position = layer.get_heatmapRow(layer.get_dispRowIds()[i]) * layer.get_ncols() * 4 +
+							layer.get_heatmapCol(layer.get_dispColIds()[j]) * 4;
 						pixelData.data[position] = rgbColour.r;
 						pixelData.data[position + 1] = rgbColour.g;
 						pixelData.data[position + 2] = rgbColour.b;
@@ -1282,7 +1454,7 @@
 	    //heatmapBody.msImageSmoothingEnabled = false;
 
 			heatmapBody.drawImage(pixelHeatmap, 0, 0, 
-				layer.get_colIds().length, layer.get_rowIds().length,
+				layer.get_dispColIds().length, layer.get_dispRowIds().length,
 				0, 0,	layer.get_width(), layer.get_height());
 		}
 		
@@ -1313,8 +1485,8 @@
 		
 		layer.clusterRows = function(){
 			var items = {}, it = [],
-				rowIds = layer.get_rowIds(),
-				colIds = layer.get_colIds();
+				rowIds = layer.get_dispRowIds(),
+				colIds = layer.get_dispColIds();
 			
 			for(var i = 0; i < rowIds.length; i++) {
 				for(var j = 0; j < colIds.length; j++)
@@ -1340,8 +1512,11 @@
 			var clusters = clusterfck.hcluster(rowIds, getDistance, clusterfck.COMPLETE_LINKAGE);
 			traverse(clusters);
 			
+			var oldOrder = chart.get_heatmapRow("__order__");
 			layer.chart.reorderRow(function(a, b){
-				return newOrder.indexOf(a) - newOrder.indexOf(b);
+				if(newOrder.indexOf(a) != -1 && newOrder.indexOf(b) != -1)
+					return newOrder.indexOf(a) - newOrder.indexOf(b);
+				return oldOrder.indexOf(a) - oldOrder.indexOf(b);
 			});
 			
 			layer.chart.update();
@@ -1349,8 +1524,8 @@
 		
 		layer.clusterCols = function(){
 			var items = {}, it = [],
-				rowIds = layer.get_rowIds(),
-				colIds = layer.get_colIds();
+				rowIds = layer.get_dispRowIds(),
+				colIds = layer.get_dispColIds();
 			
 			for(var i = 0; i < colIds.length; i++) {
 				for(var j = 0; j < rowIds.length; j++)
@@ -1376,9 +1551,12 @@
 			
 			var clusters = clusterfck.hcluster(colIds, getDistance, clusterfck.COMPLETE_LINKAGE);
 			traverse(clusters);
-			
+
+			var oldOrder = chart.get_heatmapCol("__order__");
 			layer.chart.reorderCol(function(a, b){
-				return newOrder.indexOf(a) - newOrder.indexOf(b);
+				if(newOrder.indexOf(a) != -1 && newOrder.indexOf(b) != -1)
+					return newOrder.indexOf(a) - newOrder.indexOf(b);
+				return oldOrder.indexOf(a) - oldOrder.indexOf(b);
 			});
 			
 			layer.chart.update();
@@ -1406,6 +1584,7 @@
 	    .add_property( "straightColorScale" )
 	    .add_property( "midpoint", undefined )
 	    .add_property( "slopewidth", undefined )
+	    .add_property( "on_drag", function() {})
 			.add_property( "on_change", function() {})
 	    .height( 50 );    
 
@@ -1481,12 +1660,15 @@
 	    obj.mainMarker = g.append( "use" )
 	      .attr( "xlink:href", "#mainMarker")
 	      .attr( "y", 28 )
-	      .call( d3.drag().on( "drag", function() {
-	         obj.midpoint( obj.get_midpoint() + obj.pos_scale.invert( d3.event.dx ) );
-	         obj.clamp_markers();
-	         obj.update();
-	      } )
-					.on("end", function() {
+	      .call( d3.drag()
+	        .on( "drag", function() {
+	          console.log("drag event")
+	          obj.midpoint( obj.pos_scale.invert( obj.pos_scale( obj.get_midpoint() ) + d3.event.dx ) );
+	          obj.clamp_markers();
+	          obj.get_on_drag();
+	          obj.update();
+	        } )
+	        .on("end", function() {
 						obj.get_on_change();
 					})
 				);
@@ -1494,11 +1676,13 @@
 	    obj.rightMarker = g.append( "use" )
 	      .attr( "xlink:href", "#rightMarker")
 	      .attr( "y", 30 )
-	      .call( d3.drag().on( "drag", function() {
-	         obj.slopewidth( obj.get_slopewidth() + obj.pos_scale.invert( d3.event.dx ) );
-	         obj.clamp_markers();
-	         obj.update();        
-	      } )
+	      .call( d3.drag()
+	        .on( "drag", function() {
+	          obj.slopewidth( obj.pos_scale.invert( obj.pos_scale( obj.get_slopewidth() ) + d3.event.dx ) );
+	          obj.clamp_markers();
+	          obj.update();        
+	          obj.get_on_drag();
+	        } )
 					.on("end", function() {
 						obj.get_on_change();
 					})
@@ -1507,15 +1691,17 @@
 	    obj.leftMarker = g.append( "use" )
 	      .attr( "xlink:href", "#leftMarker")
 	      .attr( "y", 30 )
-	      .call( d3.drag().on( "drag", function() {
-	         obj.slopewidth( obj.get_slopewidth() - obj.pos_scale.invert( d3.event.dx ) );
-	         obj.clamp_markers();
-	         obj.update();        
-	      } )
-				.on("end", function() {
-					obj.get_on_change();
-				})
-			);
+	      .call( d3.drag()
+	        .on( "drag", function() {
+	          obj.slopewidth( obj.pos_scale.invert( obj.pos_scale( obj.get_slopewidth() ) - d3.event.dx ) );
+	          obj.clamp_markers();
+	          obj.update();        
+	          obj.get_on_drag();
+	        } )
+				  .on("end", function() {
+					  obj.get_on_change();
+				  })
+			  );
 
 	  }
 		
@@ -1531,7 +1717,7 @@
 	      obj.midpoint( percent_scale( 50 ) );
 
 	    if( obj.get_slopewidth() == undefined )
-	      obj.slopewidth( percent_scale( 15 ) );
+	      obj.slopewidth( Math.abs(percent_scale( 15 )) );
 
 	    obj.pos_scale = d3.scaleLinear()
 	      .range( [ 0, obj.get_width() ] )
@@ -1571,7 +1757,7 @@
 
 	function simpleTable() {
 
-	  obj = d3.chartBase()
+	  var obj = d3.chartBase()
 	    .add_property( "record", {} )
 
 	  obj.put_static_content = function( element ) {
@@ -1605,6 +1791,7 @@
 	exports.lineChart = lineChart;
 	exports.heatmapChart = heatmapChart;
 	exports.cache = cache;
+	exports.separateBy = separateBy;
 	exports.fireEvent = fireEvent;
 	exports.getEuclideanDistance = getEuclideanDistance;
 	exports.sigmoidColorSlider = sigmoidColorSlider;

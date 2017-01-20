@@ -1,15 +1,16 @@
 dependencies:
   - name: d3
     version: 4.3.0
-    src: htmlwidgets/lib/d3-4.3.0
+    src: htmlwidgets/lib/d3-4.4.2
     script: d3.js
   - name: linked-charts
-    version: 2016-10-31_7cdf6c
-    src: htmlwidgets/lib/linked-charts_2016-10-31_7cdf6c
+    version: 0
+    src: htmlwidgets/lib/linked-charts
     script: d3-linked-charts.js 
   - name: distnet
-    version: 0.0.1
+    version: 0.1.0
     src: htmlwidgets/lib/distnet
     script: 
       - simpleGraph.js
+      - call_pacer.js
       - distnet.js
