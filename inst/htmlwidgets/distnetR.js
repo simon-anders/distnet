@@ -16,9 +16,9 @@ HTMLWidgets.widget({
          .attr( "id", "chart" );
 
       obj.widgetSel.append("div")
-         .text("Slider");
+         .attr( "id", "slider" );
 
-      distnet( "#chart", "#slider", x.distmat, x.pointpos );
+      obj.distnet = distnet( "#chart", "#slider", width, height, x.distmat, x.pointpos );
 
     }
 

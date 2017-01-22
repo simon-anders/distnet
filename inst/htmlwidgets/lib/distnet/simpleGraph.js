@@ -12,7 +12,7 @@ function simpleGraph( id, chart ) {
   chart.put_static_content = function( element ) {
     inherited_put_static_content( element );
     // Remove axes:
-    element.selectAll( "g.axis" ).style( "display", "none" );
+    // element.selectAll( "g.axis" ).style( "display", "none" );
   }
 
   var layer = chart.add_layer(id)
