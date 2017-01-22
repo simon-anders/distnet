@@ -2,11 +2,13 @@
 
 function distnet( graphNodeSelector, sliderNodeSelector, width, height, distMatrix, points2D ) {
 
+  var obj = {};
+
   var dark = d3.rgb( 0, 0, 90 )
 
   var pacer = call_pacer( 20 );
 
-  var slider = d3.sigmoidColorSlider()
+  obj.slider = d3.sigmoidColorSlider()
      .straightColorScale( d3.scaleLinear()
         .range( [ dark, "white" ] )
         .domain( [ 0, d3.max( d3.max( distMatrix ) ) ] ) )
@@ -14,14 +16,11 @@ function distnet( graphNodeSelector, sliderNodeSelector, width, height, distMatr
         pacer.do( function() {
           // We should call 'update' here, but for performance reasons, we
           // only call the part of update that redresses the edges.
-          chart.get_edge_dresser( d3.selectAll(".graph_edge") );
+          obj.chart.get_edge_dresser( d3.selectAll(".graph_edge") );
         } )
-     })
-     .place( sliderNodeSelector );
+     });
 
-  var chart = simpleGraph( "graph" )
-     .width( width )
-     .height( height - 30 )
+  obj.chart = simpleGraph( "graph" )
      .aspectRatio( 1 )
      .npoints( points2D.length )
      .x( function(i) { return points2D[i][0] } )
@@ -31,12 +30,29 @@ function distnet( graphNodeSelector, sliderNodeSelector, width, height, distMatr
      .edge_dresser( function( sel ) { 
         sel.style( "stroke", dark )
         sel.style( "stroke-opacity", function(d) { 
-          return 1 - slider.the_sigmoid( distMatrix[d[0]][d[1]] ); } )
-     } )
-     .place( graphNodeSelector )
+          return 1 - obj.slider.the_sigmoid( distMatrix[d[0]][d[1]] ); } )
+     } );
     
+  obj.resize = function( width, height, no_update ) {
+      obj.slider
+         .width( width );
+      obj.chart
+         .width( width )
+         .height( height - obj.slider.get_height() - obj.slider.get_margin().top - 
+            obj.slider.get_margin().bottom - 13 )
+         .margin( { top: 2, right: 2, bottom: 10, left: 2 } );
+      if( !no_update ) {
+         obj.chart.update();
+         obj.slider.update();
+      }
+   } 
 
-  return obj;
+   obj.resize( width, height, true );
+
+   obj.slider.place( sliderNodeSelector );
+   obj.chart.place( graphNodeSelector );
+
+   return obj;
 
 } 
 

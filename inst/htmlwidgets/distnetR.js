@@ -23,6 +23,9 @@ HTMLWidgets.widget({
     }
 
     obj.resize = function( width, height ) {
+
+       obj.distnet.resize( width, height );
+
     }
 
     return obj;
