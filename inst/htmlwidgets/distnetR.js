@@ -12,13 +12,9 @@ HTMLWidgets.widget({
 
     obj.renderValue = function( x ) {
 
-      obj.widgetSel.append("div")
-         .attr( "id", "chart" );
 
-      obj.widgetSel.append("div")
-         .attr( "id", "slider" );
-
-      obj.distnet = distnet( "#chart", "#slider", width, height, x.distmat, x.pointpos );
+      obj.distnet = distnet( obj.widgetSel, width, height, x.distmat, x.pointpos, 
+         x.labels, x.colors );
 
     }
 

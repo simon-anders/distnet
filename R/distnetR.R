@@ -15,7 +15,7 @@ distnet <- function( dists, conf = NULL, labels = NULL, colors = NULL, datamat =
   stopifnot( nrow(conf) == nrow(dists) )
   colnames( conf ) <- c( "x", "y" )
 
-  if( is.null(labels) )
+  if( is.null(labels) )    
     labels <- rownames( dists )
   stopifnot( length(labels) == nrow(dists) )
 
@@ -27,7 +27,6 @@ distnet <- function( dists, conf = NULL, labels = NULL, colors = NULL, datamat =
     stopifnot( is.matrix( datamat ) )
     stopifnot( nrow(datamat) == nrow(dists) )
   }
-
 
   htmlwidgets::createWidget( "distnetR", 
     list( distmat=dists, pointpos=conf, labels=labels, colors=colors, datamat=datamat ) )

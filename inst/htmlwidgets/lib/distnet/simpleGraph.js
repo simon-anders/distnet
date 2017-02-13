@@ -19,7 +19,7 @@ function simpleGraph( id, chart ) {
     .add_property("x")
     .add_property("y")
     .add_property("edge_dresser", function() {} )
-    .add_property("vertex_style", "" )
+    .add_property("vertex_dresser", function() {} )
     .add_property("edge_style", "stroke:black" )
     .add_property("npoints")
     .add_property("dataIds")
@@ -104,7 +104,7 @@ function simpleGraph( id, chart ) {
       .call( transition_or_selection )
         .attr( "cx", function(d) { return layer.chart.axes.scale_x( layer.get_x(d) ) } )
         .attr( "cy", function(d) { return layer.chart.axes.scale_y( layer.get_y(d) ) } )
-        .attr( "style", function(d) { return layer.get_vertex_style(d) } );
+        .call( function(x) { layer.get_vertex_dresser(x) } );
 
     return layer;
   };

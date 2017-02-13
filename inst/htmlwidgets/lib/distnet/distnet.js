@@ -1,6 +1,17 @@
 "use strict";
 
-function distnet( graphNodeSelector, sliderNodeSelector, width, height, distMatrix, points2D ) {
+function distnet( widgetSelector, width, height, 
+    distMatrix, points2D, labels, colors ) {
+
+  widgetSelector.append("div")
+    .attr( "id", "chart" );
+
+  var info = widgetSelector.append("p")
+    .html( "&nbsp;" )
+    .attr( "id", "info" );
+
+  widgetSelector.append("div")
+    .attr( "id", "slider" );
 
   var obj = {};
 
@@ -28,10 +39,16 @@ function distnet( graphNodeSelector, sliderNodeSelector, width, height, distMatr
      .transitionDuration( 0 )
      //.edge_present( function( i, j ) { return slider.the_sigmoid( distMatrix[i][j] ) < .9 } )
      .edge_dresser( function( sel ) { 
-        sel.style( "stroke", dark )
-        sel.style( "stroke-opacity", function(d) { 
-          return 1 - obj.slider.the_sigmoid( distMatrix[d[0]][d[1]] ); } )
-     } );
+        sel
+          .style( "stroke", dark )
+          .style( "stroke-opacity", function(d) { 
+            return 1 - obj.slider.the_sigmoid( distMatrix[d[0]][d[1]] ); } ) } )
+     .vertex_dresser( function( sel ) {
+        sel
+          .style( "fill", function(d) { return colors[d] } )
+          .on( "mouseover", function(d) { info.text( labels[d] ) } )
+          .on( "mouseout", function(d) { info.html( "&nbsp;" ) } );
+     })
     
   obj.resize = function( width, height, no_update ) {
       obj.slider
@@ -49,8 +66,8 @@ function distnet( graphNodeSelector, sliderNodeSelector, width, height, distMatr
 
    obj.resize( width, height, true );
 
-   obj.slider.place( sliderNodeSelector );
-   obj.chart.place( graphNodeSelector );
+   obj.slider.place( "#slider" );
+   obj.chart.place( "#chart" );
 
    return obj;
 
