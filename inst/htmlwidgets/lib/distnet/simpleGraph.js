@@ -3,7 +3,7 @@
 function simpleGraph( id, chart ) {
 
   if(chart === undefined) {
-    chart = d3.axisChartBase();
+    chart = lc.axisChartBase();
   }
   if(id === undefined)
     id = "layer" + chart.layers.length;

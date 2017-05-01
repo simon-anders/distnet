@@ -6,7 +6,7 @@ dependencies:
   - name: linked-charts
     version: 0
     src: htmlwidgets/lib/linked-charts
-    script: d3-linked-charts.js 
+    script: linked-charts.js 
   - name: distnet
     version: 0.1.0
     src: htmlwidgets/lib/distnet

@@ -23,7 +23,7 @@ function distnet( widgetSelector, width, height,
 
   var pacer = call_pacer( 20 );
 
-  obj.slider = d3.sigmoidColorSlider()
+  obj.slider = lc.sigmoidColorSlider()
      .straightColorScale( d3.scaleLinear()
         .range( [ dark, "white" ] )
         .domain( [ 0, d3.max( d3.max( distMatrix ) ) ] ) )
