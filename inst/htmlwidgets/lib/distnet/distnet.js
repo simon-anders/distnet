@@ -8,7 +8,11 @@ function distnet( widgetSelector, width, height,
 
   var info = widgetSelector.append("p")
     .html( "&nbsp;" )
-    .attr( "id", "info" );
+    .attr( "id", "info" )
+    .style( "margin-top", "0px")
+    .style( "margin-bottom", "10px")
+    .style( "margin-left", "0px")
+    .style( "margin-right", "0px");
 
   widgetSelector.append("div")
     .attr( "id", "slider" );
@@ -53,10 +57,11 @@ function distnet( widgetSelector, width, height,
   obj.resize = function( width, height, no_update ) {
       obj.slider
          .width( width );
+      console.log( d3.select("#info").node().getBoundingClientRect().height );
       obj.chart
          .width( width )
          .height( height - obj.slider.get_height() - obj.slider.get_margin().top - 
-            obj.slider.get_margin().bottom - 13 )
+            obj.slider.get_margin().bottom - 12 - 10 - d3.select("#info").node().getBoundingClientRect().height )
          .margin( { top: 2, right: 2, bottom: 10, left: 2 } );
       if( !no_update ) {
          obj.chart.update();
