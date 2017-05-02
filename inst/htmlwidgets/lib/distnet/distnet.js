@@ -53,6 +53,8 @@ function distnet( widgetSelector, width, height,
           .on( "mouseover", function(d) { info.text( labels[d] ) } )
           .on( "mouseout", function(d) { info.html( "&nbsp;" ) } );
      })
+
+  console.log( "CCC", obj.chart );
     
   obj.resize = function( width, height, no_update ) {
       obj.slider
