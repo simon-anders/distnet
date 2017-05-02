@@ -1,12 +1,13 @@
 dependencies:
   - name: d3
-    version: 4.3.0
-    src: htmlwidgets/lib/d3-4.4.2
+    version: 4.8.0
+    src: htmlwidgets/lib/d3-4.8.0
     script: d3.js
   - name: linked-charts
     version: 0
     src: htmlwidgets/lib/linked-charts
-    script: linked-charts.js 
+    script: linked-charts.js
+    stylesheet: style.css 
   - name: distnet
     version: 0.1.0
     src: htmlwidgets/lib/distnet

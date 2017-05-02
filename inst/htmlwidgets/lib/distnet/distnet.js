@@ -53,11 +53,10 @@ function distnet( widgetSelector, width, height,
           .on( "mouseover", function(d) { info.text( labels[d] ) } )
           .on( "mouseout", function(d) { info.html( "&nbsp;" ) } );
      })
-    
+
   obj.resize = function( width, height, no_update ) {
       obj.slider
          .width( width );
-      console.log( d3.select("#info").node().getBoundingClientRect().height );
       obj.chart
          .width( width )
          .height( height - obj.slider.get_height() - obj.slider.get_margin().top - 
