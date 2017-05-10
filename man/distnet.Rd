@@ -15,12 +15,12 @@ distnet(dists, conf = NULL, labels = NULL, colors = NULL)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{dists}{
-  A symmetric square matrix of dissimilarity scores or a \code{dist} object (as, e.g., returned by the \code{dist} function).
+  A symmetric square matrix of dissimilarity scores or a \code{dist} object (as, e.g., returned by the \code{\link{dist}} function).
   For N objects, this is an N-by-N matrix.
 }
   \item{conf}{
   A matrix or data frame with 2 columns and N rows, specifying the configuration, i.e., the 2D coordinates of the points that represent the N objects. 
-  If missing, \code{MASS::isoMDS} will be called to get a configuration using Kruskall's non-metric multidimensional scaling.
+  If missing, \code{\link{MASS}{isoMDS}} will be called to get a configuration using Kruskall's non-metric multidimensional scaling.
 }
   \item{labels}{
   Optionally, a character vector with N labels can be passed. A point's label will be displayed between chart and color scale when the mouse
@@ -34,7 +34,10 @@ distnet(dists, conf = NULL, labels = NULL, colors = NULL)
 The function displays the configuration (i.e., the objects represented as points at their 2D coordinates as given in \code{conf}) in a browser window (or in RStudio's Viewer pane).
 A color scale below the chart maps distances in feature space (i.e., according to \code{dists}) to shades of blue of decreasing saturation. The color scale
 can be adjusted by dragging the wedges below the bar with the mouse. Lines are drawn between the points to indicate their feature-space distance. Drag the 
-wedges and observe how lines appear and vanish, and so get a feel for the true distances between your objects.}
+wedges and observe how lines appear and vanish, and so get a feel for the true distances between your objects.
+
+You can zoom in by gformin a rubber-band rectangle with the mouse, and zoom back out to full view with a double click.
+}
 \value{
 An invisible \code{htmlwidget} object, representing the chart, is returned.
 }
@@ -51,7 +54,7 @@ Simon Anders, sanders@fs.tum.de
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-\code{\link{MASS::isoMDS}}, \code{\link{focusedMDS::focusedMDS}}
+\code{\link[MASS]{isoMDS}}, \code{\link[focusedMDS]{focusedMDS}}
 }
 \examples{
 m <- matrix(rnorm(200),ncol=10)

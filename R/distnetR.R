@@ -26,7 +26,8 @@ distnet <- function( dists, conf = NULL, labels = NULL, colors = NULL ) {
 
 
   htmlwidgets::createWidget( "distnetR", 
-    list( distmat=dists, pointpos=conf, labels=labels, colors=colors ) )
+    list( distmat=dists, pointpos=conf, labels=labels, colors=colors ),
+    package = "distnet" )
 
 }
 

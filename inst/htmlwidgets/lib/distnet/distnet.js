@@ -28,10 +28,11 @@ function distnet( widgetSelector, width, height,
         .range( [ dark, "white" ] )
         .domain( [ 0, d3.max( d3.max( distMatrix ) ) ] ) )
      .on_drag( function() {
+        console.log("A")
         pacer.do( function() {
           // We should call 'update' here, but for performance reasons, we
           // only call the part of update that redresses the edges.
-          obj.chart.get_edge_dresser( d3.selectAll(".graph_edge") );
+          obj.chart.get_layer("graph").get_edge_dresser( d3.selectAll(".graph_edge") );
         } )
      });
 
@@ -40,8 +41,9 @@ function distnet( widgetSelector, width, height,
      .npoints( points2D.length )
      .x( function(i) { return points2D[i][0] } )
      .y( function(i) { return points2D[i][1] } )
+     .size( 6 )
      .transitionDuration( 0 )
-     //.edge_present( function( i, j ) { return slider.the_sigmoid( distMatrix[i][j] ) < .9 } )
+     .edge_present( function( i, j ) { return obj.slider.the_sigmoid( distMatrix[i][j] ) < .9 } )
      .edge_dresser( function( sel ) { 
         sel
           .style( "stroke", dark )

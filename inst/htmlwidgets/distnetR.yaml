@@ -9,9 +9,10 @@ dependencies:
     script: linked-charts.js
     stylesheet: style.css 
   - name: distnet
-    version: 0.1.0
+    version: 0
     src: htmlwidgets/lib/distnet
     script: 
       - simpleGraph.js
       - call_pacer.js
       - distnet.js
+    stylesheet: distnet.css 

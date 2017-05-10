@@ -1,9 +1,9 @@
-Package: distnetR
-Version: 0.0.0
-Date: 2016-04-25
-Title: distnet widget
+Package: distnet
+Version: 0.1.0
+Date: 2017-05-09
+Title: Interactive checking of dimension-reduction visualizations
 Author: Simon Anders
 Maintainer: Simon Anders <sanders@fs.tum.de>
-License: tbd
+License: LGPL-3
 Description: none yet
 Imports: htmlwidgets (>= 0.6), MASS
